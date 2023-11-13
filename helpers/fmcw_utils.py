@@ -9,7 +9,6 @@ import neurokit2
 import numpy as np
 import scipy
 import scipy.signal as signal
-from ifx_radar import Communication
 from pandas import read_csv
 
 import helpers.DBF as DBF
