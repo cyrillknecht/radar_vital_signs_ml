@@ -27,10 +27,10 @@ def plot_ecg_lines(peaks, ax, color="k", colors=None):
             ax.axvline(x=x, color=colors[i], alpha=0.3, )
 
 def plot_values_in_complex_plane(signal, ax,indexes=None):
-    """Plot complex signal in complex plane where points change colors over time
+    """Plot complex input_signal in complex plane where points change colors over time
 
     Args:
-      signal: complex signal (usually one bin of the range FFT over time)
+      signal: complex input_signal (usually one bin of the range FFT over time)
       ax (matplotlib.axes): axis to plot on
       indexes:  Indexes which have special indications (used for heartbeats) (Default value = None)
 

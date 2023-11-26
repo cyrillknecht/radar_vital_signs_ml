@@ -48,9 +48,9 @@ def hyperbolicEqn(F, dT, M=1, C=2.0 * 10 * 0.707, K=100, n=4, x0=0.0, v0=0.0):
 
 def peak_envelopes(s, dmin=1, dmax=1, split=False, both=False):
     """
-    Envelope based on the peaks of the signal. d
+    Envelope based on the peaks of the input_signal. d
     Input :
-    s: 1d-array, data signal from which to extract high and low envelopes
+    s: 1d-array, data input_signal from which to extract high and low envelopes
     dmin, dmax: int, optional, size of chunks to filter peaks
     split: bool, optional, Use if data is not centered around 0
     both: If both the lower envelope and higher envelope should be returned, otherwise sum of both
@@ -70,7 +70,7 @@ def peak_envelopes(s, dmin=1, dmax=1, split=False, both=False):
     lmin = lmin[[i + np.argmin(s[lmin[i:i + dmin]]) for i in range(0, len(lmin), dmin)]]
     lmax = lmax[[i + np.argmax(s[lmax[i:i + dmax]]) for i in range(0, len(lmax), dmax)]]
 
-    # Safety for signal without peaks as interpolation would fail otherwise
+    # Safety for input_signal without peaks as interpolation would fail otherwise
     if len(lmax) == 0 and len(lmin) == 0:
         h_signal = s
         l_signal = s
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     shannon = shannon_envelope(signal)
     peak_envelope = peak_envelopes(signal)
 
-    # Model signal as single degree-of-freedom and solve differential equation
+    # Model input_signal as single degree-of-freedom and solve differential equation
     # Paper: A cardiac sound characteristic waveform method for in-home heart disorder monitoring with electric stethoscope
     hyperbolic, _, _ = hyperbolicEqn(np.abs(signal), 1 / 100)
     plt.plot((shannon - np.mean(shannon)) / np.std(shannon), label="shannon")

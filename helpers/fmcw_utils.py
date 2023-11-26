@@ -36,11 +36,11 @@ def range_fft(series, windowing=False, padding=None, mean_removal=False):
     Args:
       series: Data of one chirp
       windowing: If the Hann window should be applied first (Default value = False)
-      padding: If signal should be padded first (Default value = None)
+      padding: If input_signal should be padded first (Default value = None)
       mean_removal:  (Default value = False)
 
     Returns:
-        FFT of signal with the preprocessing applied
+        FFT of input_signal with the preprocessing applied
     """
     windowed = series
     if mean_removal:
@@ -54,17 +54,17 @@ def range_fft(series, windowing=False, padding=None, mean_removal=False):
 
 
 def butt_filt(signal_to_filter, lf, hf, fps, order=4):
-    """Apply simple butterworth filter (between lf and hf) to the signal
+    """Apply simple butterworth filter (between lf and hf) to the input_signal
 
     Args:
-      signal_to_filter (array): signal to filter
+      signal_to_filter (array): input_signal to filter
       lf (float): low frequency
       hf (float): high frequency
       fps (float): frames per second
       order:  (Default value = 4)
 
     Returns:
-        filtered signal
+        filtered input_signal
     """
     filter_coeff = signal.butter(order, Wn=[lf, hf], btype='bandpass', fs=fps, analog=False, output='sos')
     filtered = signal.sosfiltfilt(filter_coeff, signal_to_filter)
@@ -72,15 +72,15 @@ def butt_filt(signal_to_filter, lf, hf, fps, order=4):
 
 
 def low_filt(signal_to_filter, lf, fps):
-    """Apply simple lowpass filter to the signal
+    """Apply simple lowpass filter to the input_signal
 
     Args:
-      signal_to_filter (array): signal to filter
+      signal_to_filter (array): input_signal to filter
       lf (float): filter frequency
       fps (float): frames per second
 
     Returns:
-        filtered signal
+        filtered input_signal
     """
     filter_coeff = signal.butter(4, Wn=lf, btype='lowpass', fs=fps, analog=False, output='sos')
     filtered = signal.sosfiltfilt(filter_coeff, signal_to_filter)
@@ -88,15 +88,15 @@ def low_filt(signal_to_filter, lf, fps):
 
 
 def high_filt(signal_to_filter, hf, fps):
-    """Apply simple highpass filter to the signal
+    """Apply simple highpass filter to the input_signal
 
     Args:
-      signal_to_filter (array): signal to filter
+      signal_to_filter (array): input_signal to filter
       hf (float): filter frequency
       fps (float): frames per second
 
     Returns:
-        filtered signal
+        filtered input_signal
 
     """
     filter_coeff = signal.butter(4, Wn=hf, btype='highpass', fs=fps, analog=False, output='sos')
@@ -108,11 +108,11 @@ def dacm_phase(iq, start_angle=None):
     """DACM Phase unwrapping (Alternative to arctan unwrapping)
 
     Args:
-      iq: complex signal
-      start_angle: return: DACM phase unwrapped signal (Default value = None)
+      iq: complex input_signal
+      start_angle: return: DACM phase unwrapped input_signal (Default value = None)
 
     Returns:
-      DACM phase unwrapped signal
+      DACM phase unwrapped input_signal
 
     """
     I_signal = np.real(iq)
@@ -130,14 +130,14 @@ def dacm_phase(iq, start_angle=None):
 
 
 def dc_offset(signal, mode=0):
-    """calculate DC-Offset of the signal
+    """calculate DC-Offset of the input_signal
 
     Args:
-      signal: complex signal
+      signal: complex input_signal
       mode: With which mode to calculate the DC offset (0: Circle fit, 1: Mean) (Default value = 0)
 
     Returns:
-      The DC offset corrected complex signal, the complex DC offset [real,imag]
+      The DC offset corrected complex input_signal, the complex DC offset [real,imag]
 
     """
     if mode == 0:
@@ -172,7 +172,7 @@ def find_max_bin(range_ffts, mode=0, min_index=2, max_index=-1, which_antenna=No
     if range_ffts.shape[-1] == 1:
         which_antenna = 0
 
-    # If no window is supplied we take the whole signal length as the window
+    # If no window is supplied we take the whole input_signal length as the window
     if window is None:
         window = range_ffts.shape[0]
     else:
@@ -213,13 +213,13 @@ def find_max_bin(range_ffts, mode=0, min_index=2, max_index=-1, which_antenna=No
 
 
 def extract_hr_gaussian_comb(signal, chirp_interval, hr_to_check=list(range(48, 95, 1)), peak_signal=False):
-    """Extract HR from a signal with the correlation of different gaussian combs (OLD method that assumes very small HRV)
+    """Extract HR from a input_signal with the correlation of different gaussian combs (OLD method that assumes very small HRV)
 
     Args:
-      signal: Signal to analyze (either the raw displacement or the peak signal. If peak signal peak_signal param must be set True)
+      signal: Signal to analyze (either the raw displacement or the peak input_signal. If peak input_signal peak_signal param must be set True)
       chirp_interval: Chirp frequency interval
       hr_to_check: Which HRs to check (Default value = list(range(48)
-      peak_signal: If the signal is already the peak signal or just the displacement (Default value = False)
+      peak_signal: If the input_signal is already the peak input_signal or just the displacement (Default value = False)
       95: 
       1)): 
 
@@ -229,7 +229,7 @@ def extract_hr_gaussian_comb(signal, chirp_interval, hr_to_check=list(range(48, 
     """
 
     if not peak_signal:
-        # Generate the peak signal first
+        # Generate the peak input_signal first
         HF_filtered = butt_filt(signal, 8, 20, 1 / chirp_interval)
         envelope = peak_envelopes(HF_filtered)
         peak_signal = envelope
@@ -246,7 +246,7 @@ def extract_hr_gaussian_comb(signal, chirp_interval, hr_to_check=list(range(48, 
         # Create a gaussian pulse with the desired width
         window = scipy.signal.gaussian(int(round((60 / i) / chirp_interval)), std=3)
 
-        # Calculate the number of times this pulse fits in the signal and take two less to have some room to correlate it
+        # Calculate the number of times this pulse fits in the input_signal and take two less to have some room to correlate it
         number_of_windows = len(peak_signal) // len(window) - 2
         window_comb = list(window) * number_of_windows
 
@@ -325,7 +325,7 @@ def extract_hr_peaks(signal, chirp_interval, simple=False, fft_mode=True):
     mean = np.mean(properties["peak_heights"])
     std = np.std(properties["peak_heights"])
 
-    # peaks, properties = scipy.signal.find_peaks(signal, distance=(60 / 110) / chirp_interval, prominence=0.01,
+    # peaks, properties = scipy.input_signal.find_peaks(input_signal, distance=(60 / 110) / chirp_interval, prominence=0.01,
     #                                             height=(mean-std,mean+3*std))
     all_diffs = np.diff(peaks)
     all_diffs = np.round(all_diffs / (0.02 / chirp_interval)).astype(int)
@@ -423,7 +423,7 @@ def extract_phase_multibin(input_fft_data, alpha=0.99, apply_dc_offset=False, fi
 
     Args:
       input_fft_data: Complex range fft data in the form [num_chirps,num_range_bins]
-      alpha: high pass filter factor (The higher the smoother the signal) (Default value = 0.99)
+      alpha: high pass filter factor (The higher the smoother the input_signal) (Default value = 0.99)
       apply_dc_offset: If DC-offset should be applied to each range bin (Default value = False)
       first_angle:  With which angle to start (Default value = 0), needed if bin was changing
       prev_value:  with which complex value to start (Default value = None) needed if bin was changing
@@ -481,7 +481,7 @@ def read_ecg(filename):
       filename: filename of ecg-data
 
     Returns:
-      ecg-signal, the index of the ecg peaks, the start-time of the signal, additional info
+      ecg-input_signal, the index of the ecg peaks, the start-time of the input_signal, additional info
 
     """
     with open(filename, "r") as file:
@@ -492,7 +492,7 @@ def read_ecg(filename):
     # check if polar belt was worn incorrectly
     ecg, inverted = neurokit2.ecg_invert(ecg, sampling_rate=130)
     if inverted:
-        print("Inverted Polar signal")
+        print("Inverted Polar input_signal")
 
     # calculat HR ground truth from ecg and get the R-peaks
     hr, peaks, _, info = HR_calc_ecg(ecg, mode=1, safety_check=False, all=True)
@@ -608,7 +608,7 @@ def calc_beamforming(range_ffts, radar):
 
 def HR_calc_ecg(ecg_data, mode=1, safety_check=True, all=False):
     """
-    Calculate the HR from an ECG signal, is based on the HeartPy library
+    Calculate the HR from an ECG input_signal, is based on the HeartPy library
     Args:
       ecg_data: The ecg data from which the HR is estimated
       mode: Which mode to use for the HR calculation (mode 0: number of peaks per minute, mode 1: median distance between peaks) (Default value = 1)
@@ -616,12 +616,12 @@ def HR_calc_ecg(ecg_data, mode=1, safety_check=True, all=False):
 
 
     Returns:
-      Hr estimate, the indexes of the ecg peaks, the filtered ECG signal, additional measures from the HeartPy library
+      Hr estimate, the indexes of the ecg peaks, the filtered ECG input_signal, additional measures from the HeartPy library
 
     """
     resample_factor = 6
 
-    # recomended to filter the signal before processing
+    # recomended to filter the input_signal before processing
     ecg_filtered = hp.filter_signal(ecg_data, cutoff=0.05, sample_rate=130, filtertype='notch')
 
     # sometimes seems to help but leave for now
@@ -642,10 +642,10 @@ def HR_calc_ecg(ecg_data, mode=1, safety_check=True, all=False):
 
 
 def estimate_radar_HR(displacment_signal, chirp_time, mode):
-    """Calculates the heart rate from the phase signal with different methods
+    """Calculates the heart rate from the phase input_signal with different methods
 
     Args:
-      displacment_signal: unwrapped phase signal
+      displacment_signal: unwrapped phase input_signal
       chirp_time: time between chirps
       mode: 0: Banpass Method, 1: High Frequency Method
 
@@ -707,7 +707,7 @@ def get_first_port():
 
 
 def gaussian(x, amplitude, mean, stddev):
-    """Create a gaussian signal
+    """Create a gaussian input_signal
 
     Args:
         x: time vector
@@ -716,13 +716,13 @@ def gaussian(x, amplitude, mean, stddev):
         stddev: standard deviation of the gaussian
 
     Returns:
-        gaussian signal
+        gaussian input_signal
     """
     return amplitude * np.exp(-((x - mean) / 4 / stddev) ** 2)
 
 
 def create_comb_from_peaks(peaks, t_signal, width=1.0):
-    """Create a comb signal from the detected peaks
+    """Create a comb input_signal from the detected peaks
         The comb should do a small gaussian around the peak
 
     Args:
@@ -731,7 +731,7 @@ def create_comb_from_peaks(peaks, t_signal, width=1.0):
       width:  (Default value = 1.0)
 
     Returns:
-        the generated comb signal
+        the generated comb input_signal
     """
     comb = np.zeros_like(t_signal, dtype=float)
     for p in peaks:
@@ -740,13 +740,13 @@ def create_comb_from_peaks(peaks, t_signal, width=1.0):
 
 
 def find_best_correleation_ecg_and_radar(t_signal_ecg, peaks_ecg, t_signal_radar, signal_radar):
-    """Find the best correlation between the ecg and radar signal
+    """Find the best correlation between the ecg and radar input_signal
     
     Args:
-      t_signal_ecg: time vector of the ecg signal
-      peaks_ecg: peaks of the ecg signal
-      t_signal_radar: time vector of the radar signal
-      signal_radar: radar signal
+      t_signal_ecg: time vector of the ecg input_signal
+      peaks_ecg: peaks of the ecg input_signal
+      t_signal_radar: time vector of the radar input_signal
+      signal_radar: radar input_signal
     l
     Returns:
       the best correlation
@@ -767,7 +767,7 @@ def find_best_correleation_ecg_and_radar(t_signal_ecg, peaks_ecg, t_signal_radar
 
     comb = create_comb_from_peaks(t_signal_ecg_peaks, t_signal_ecg, 0.03)
 
-    # resample the comb to the radar signal
+    # resample the comb to the radar input_signal
     comb_for_radar = scipy.signal.resample(comb, len(t_signal_radar))[max_shift:-max_shift]
 
     corelation = scipy.signal.correlate(comb_for_radar, signal_radar, mode="valid")
