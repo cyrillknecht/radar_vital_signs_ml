@@ -7,6 +7,7 @@ Main runner file for training and evaluating the model.
 # TODO: Inference function, function to load model and predict on new data
 # TODO: check TCN implementation
 # TODO: Check preprocessing
+# TODO: Add visualization of validation results
 
 import hydra
 
@@ -25,6 +26,10 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def training_loop(cfg: DictConfig):
+    if not cfg.api_key:
+        print("No wandb API key provided. Please provide a key in the config file.")
+        return
+
     hydra.output_subdir = None
     print("Loading dataset...")
     train_dataset, test_dataset, val_dataset = get_data_loaders(cfg.batch_size, cfg.data_dir)
@@ -48,7 +53,7 @@ def training_loop(cfg: DictConfig):
         trainer = pl.Trainer(max_epochs=cfg.max_epochs,
                              enable_model_summary=True,
                              logger=wandbLogger,
-                             callbacks=[EarlyStopping(monitor='val_loss', patience=3, mode='min')],
+                             callbacks=[EarlyStopping(monitor='val_loss', patience=5, mode='min')],
                              deterministic=True,
                              fast_dev_run=False,
                              )

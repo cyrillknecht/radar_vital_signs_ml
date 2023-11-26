@@ -10,13 +10,13 @@ class MLP(nn.Module):
     def __init__(self, input_size,
                  output_size,
                  hidden_sizes=None,
-                 dropout_rate=0.5):
+                 dropout_rate=0.2):
 
         super(MLP, self).__init__()
 
         # Default hidden sizes
         if hidden_sizes is None:
-            hidden_sizes = [2048, 1024, 512, 256]
+            hidden_sizes = [4096, 4096, 4096, 4096]
 
         # Input layer
         self.input_layer = nn.Linear(input_size, hidden_sizes[0])

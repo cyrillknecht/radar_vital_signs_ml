@@ -1,0 +1,19 @@
+project_name: "radar-ecg"
+data_dir: "dataset_processed"
+unprocessed_data_dir: "dataset"
+save_dir: "outputs"
+api_key: ""
+
+model: TCN
+input_size: 2954
+output_size: 3900
+hidden_size: 256
+num_layers: 4
+kernel_size: 3
+
+max_epochs: 40
+batch_size: 16
+learning_rate: 1e-3
+model_path: ""
+dev_mode: False
+

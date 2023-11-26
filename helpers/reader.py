@@ -13,10 +13,10 @@ def read_ecg(filename):
     """Reader function for the ecg data
 
     Args:
-      filename: filename of ecg-data
+ c     filename: filename of ecg-data
 
     Returns:
-      ecg-signal,the start-time of the signal
+      ecg-input_signal,the start-time of the input_signal
 
     """
     with open(filename, "r") as file:
@@ -42,7 +42,7 @@ def read_acc(filename):
         start_time = datetime.datetime.strptime(start_time, '%H:%M:%S.%f')
         acc_signals = np.loadtxt(file)
 
-    return acc_signals, start_time_acc
+    return acc_signals, start_time
 
 
 def read_radar_data_npz(filename, which_shape=1):
@@ -69,10 +69,10 @@ if __name__ == "__main__":
     recording = "2"
     ecg_samplingrate = 130
 
-    ecg, start_time_ecg, = read_ecg(os.path.join("dataset", str(subject), f"recording_{recording}_ecg.txt"))
-    acc, start_time_acc = read_acc(os.path.join("dataset", str(subject), f"recording_{recording}_acc.txt"))
+    ecg, start_time_ecg, = read_ecg(os.path.join("../dataset", str(subject), f"recording_{recording}_ecg.txt"))
+    acc, start_time_acc = read_acc(os.path.join("../dataset", str(subject), f"recording_{recording}_acc.txt"))
 
-    radar_60, info_60, = read_radar_data_npz(os.path.join("dataset", str(subject), f"recording_{recording}_60GHz.npz"))
+    radar_60, info_60, = read_radar_data_npz(os.path.join("../dataset", str(subject), f"recording_{recording}_60GHz.npz"))
     # radar_24, info_24,=read_radar_data_npz(os.path.join("dataset",str(subject),f"recording_{recording}_24GHz.npz"))
     # radar_120, info_120,=read_radar_data_npz(os.path.join("dataset",str(subject),f"recording_{recording}_120GHz.npz"))
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     t_signal_ecg = np.array(list(range(len(ecg_part)))) * (1 / ecg_samplingrate)
 
     # Debug prints
-    print(f"Shape of hf signal: {hf_signal.shape}")
+    print(f"Shape of hf input_signal: {hf_signal.shape}")
     print(f"Shape of t_signal: {t_signal.shape}")
     print(f"Shape of ecg: {t_signal_ecg.shape}")
     print(f"Shape of t_signal_ecg: {t_signal_ecg.shape}")

@@ -1,8 +1,9 @@
 from helpers.DBF import DBF
-from helpers.fmcw_utils import c,DISTANCE_ANTENNAS,range_fft
+from helpers.fmcw_utils import c, DISTANCE_ANTENNAS, range_fft
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+
 
 def plot_ecg_lines(peaks, ax, color="k", colors=None):
     """Plot vertical lines at the detected peaks
@@ -26,7 +27,8 @@ def plot_ecg_lines(peaks, ax, color="k", colors=None):
         else:
             ax.axvline(x=x, color=colors[i], alpha=0.3, )
 
-def plot_values_in_complex_plane(signal, ax,indexes=None):
+
+def plot_values_in_complex_plane(signal, ax, indexes=None):
     """Plot complex input_signal in complex plane where points change colors over time
 
     Args:
@@ -44,6 +46,7 @@ def plot_values_in_complex_plane(signal, ax,indexes=None):
         ax.plot(np.real(signal[i:i + 2]), np.imag(signal[i:i + 2]), color=color)
     if indexes is not None:
         ax.scatter(np.real(signal[indexes]), np.imag(signal[indexes]), marker="x", color="black")
+
 
 def plot_angle(data, bandwidth, num_beans, max_angle_degree, ax, mode="e", min_range=0, max_range=1, ):
     """Plot range angle map and calculate the biggest reflection angle and range between min_range and max_range
