@@ -6,14 +6,17 @@ api_key: ""
 
 model: TCN
 input_size: 2954
-output_size: 3900
-hidden_size: 256
-num_layers: 4
+output_size: 2954
+hidden_size: 100
+num_layers: 11
 kernel_size: 3
 
-max_epochs: 40
-batch_size: 16
+max_epochs: 200
+batch_size: 64
 learning_rate: 1e-3
 model_path: ""
+
 dev_mode: False
+test_only: False
+
 
