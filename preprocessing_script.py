@@ -8,6 +8,8 @@ import os.path
 import csv
 
 import numpy as np
+import scipy.signal
+
 from helpers.envelopes import peak_envelopes
 from helpers.fmcw_utils import range_fft, HR_calc_ecg, extract_phase_multibin, find_max_bin, butt_filt
 
@@ -60,8 +62,11 @@ def get_sawtooth_signal(input_signal):
         sawtooth signal generated from signal with original peaks
 
     """
+    # downsample the signal
+    resampled_signal = scipy.signal.resample(input_signal, 2954)
+
     # use the existing processing for peaks and filtered resampled input_signal
-    _, peaks, filtered, _ = HR_calc_ecg(input_signal, mode=1, safety_check=False)
+    _, peaks, filtered, _ = HR_calc_ecg(resampled_signal, mode=1, safety_check=False)
 
     # Create a new array of zeros
     new_signal = np.zeros_like(filtered)
@@ -114,7 +119,7 @@ def get_signals(subj, recording):
     return radar_data, radar_info, ecg
 
 
-def preprocess_data(subj_list, rec_list, target_dir):
+def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_duration=30, slice_stride=5):
     # delete old directory if it exists
     if os.path.exists(target_dir):
         import shutil
@@ -144,9 +149,10 @@ def preprocess_data(subj_list, rec_list, target_dir):
             frame_time = radar_info[1]["frame_time"]
 
             # Process data in 30-second windows
-            for window_start in range(int(10 // frame_time), len(range_ffts) - int(30 // frame_time),
-                                      int(5 // frame_time)):
-                window_end = window_start + int(30 // frame_time)
+            for window_start in range(int(slice_start_time // frame_time),
+                                      len(range_ffts) - int(slice_duration // frame_time),
+                                      int(slice_stride // frame_time)):
+                window_end = window_start + int(slice_duration // frame_time)
 
                 # Extract the current 30-second window
                 current_range_ffts = range_ffts[window_start:window_end, ...]

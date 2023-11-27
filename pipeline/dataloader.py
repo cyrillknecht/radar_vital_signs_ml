@@ -85,12 +85,10 @@ if __name__ == "__main__":
     plt.title("Target ECG Signal")
     plt.show()
 
-    ecg_samplingrate = 130
     frame_time = 0.01015455
-    t_signal_ecg = np.array(list(range(len(labels[0, 0, :])))) * (1 / ecg_samplingrate)
     t_signal = np.array(list(range(len(features[0, 0, :])))) * frame_time
 
-    plt.plot(t_signal_ecg, labels[0, 0, :].numpy(), label='target')
+    plt.plot(t_signal, labels[0, 0, :].numpy(), label='target')
     plt.plot(t_signal, features[0, 0, :].numpy(), label='radar signal')
     plt.legend()
     plt.xlabel("Time [s]")
