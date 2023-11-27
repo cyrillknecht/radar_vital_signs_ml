@@ -38,7 +38,7 @@ class LitModel(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         radar_signal, ecg_signal = batch
         output = self.model(radar_signal)
-        loss = nn.MSELoss()(output, ecg_signal)
+        loss = nn.L1Loss()(output, ecg_signal)
         self.log('test_loss', loss)
 
     def configure_optimizers(self):
@@ -66,7 +66,7 @@ def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2
     if model_type == "MLP":
         return MLP(input_size, output_size)
     elif model_type == "TCN":
-        return TCN(output_size, [512, 512, 512, 512, 512, 512, 512, 512, 512], kernel_size)
+        return TCN(output_size, [hidden_size]*num_layers, kernel_size)
     elif model_type == "LSTM":
         return LSTM(input_size, output_size, hidden_size, num_layers)
     elif model_type == "GRU":
