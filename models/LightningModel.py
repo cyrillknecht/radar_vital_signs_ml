@@ -68,11 +68,14 @@ def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2
     elif model_type == "TCN":
         return TCN(output_size, [hidden_size]*num_layers, kernel_size)
     elif model_type == "LSTM":
-        return LSTM(input_size, output_size, hidden_size, num_layers)
+        return LSTM(hidden_size=hidden_size,
+                    num_layers=num_layers)
     elif model_type == "GRU":
-        return GRU(input_size, output_size, hidden_size, num_layers)
+        return GRU(hidden_size=hidden_size,
+                   num_layers=num_layers)
     elif model_type == "RNN":
-        return RNN(input_size, output_size, hidden_size, num_layers)
+        return RNN(hidden_size=hidden_size,
+                   num_layers=num_layers)
     elif model_type == "Transformer":
         return Transformer(input_size, output_size, hidden_size, num_layers)
 
