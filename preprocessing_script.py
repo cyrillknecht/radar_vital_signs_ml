@@ -120,6 +120,9 @@ def get_signals(subj, recording):
 
 
 def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_duration=30, slice_stride=5):
+    radar_data_storage = []
+    ecg_data_storage = []
+
     # delete old directory if it exists
     if os.path.exists(target_dir):
         import shutil
@@ -176,10 +179,7 @@ def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_
                 # Normalize signal to range [0, 1]
                 hf_signal = (hf_signal - np.min(hf_signal)) / (np.max(hf_signal) - np.min(hf_signal))
 
-                # Write hf_signal slice on new line in csv file
-                write_to_csv(hf_signal, os.path.join(subject_folder, f"recording_{recording}_radar.csv"))
-                write_to_csv(hf_signal, os.path.join(target_dir, "full_dataset_radar.csv"))
-
+                radar_data_storage.append(hf_signal)
                 print(f"hf_signal shape: {hf_signal.shape}")
 
                 # Get ecg input_signal slice
@@ -188,10 +188,24 @@ def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_
                 # process ecg_slice
                 ecg_slice = get_sawtooth_signal(ecg_slice)
 
-                write_to_csv(ecg_slice, os.path.join(subject_folder, f"recording_{recording}_ecg.csv"))
-                write_to_csv(ecg_slice, os.path.join(target_dir, "full_dataset_ecg.csv"))
+                ecg_data_storage.append(ecg_slice)
 
-                print(f"ecg_slice shape: {ecg_slice.shape}")
+    # split data into train and test
+    radar_data_storage = np.array(radar_data_storage)
+    ecg_data_storage = np.array(ecg_data_storage)
+
+    radar_train = radar_data_storage[:int(0.8 * len(radar_data_storage))]
+    radar_test = radar_data_storage[int(0.8 * len(radar_data_storage)):]
+    ecg_train = ecg_data_storage[:int(0.8 * len(ecg_data_storage))]
+    ecg_test = ecg_data_storage[int(0.8 * len(ecg_data_storage)):]
+
+    # save data to csv files
+    np.savetxt(os.path.join(target_dir, "radar_train.csv"), radar_train, delimiter=",")
+    np.savetxt(os.path.join(target_dir, "radar_test.csv"), radar_test, delimiter=",")
+    np.savetxt(os.path.join(target_dir, "ecg_train.csv"), ecg_train, delimiter=",")
+    np.savetxt(os.path.join(target_dir, "ecg_test.csv"), ecg_test, delimiter=",")
+
+    print("Done!")
 
 
 if __name__ == "__main__":

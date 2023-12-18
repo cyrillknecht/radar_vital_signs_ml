@@ -29,16 +29,16 @@ def training_loop(cfg: DictConfig):
 
     hydra.output_subdir = None
     print("Loading dataset...")
-    train_dataset, test_dataset, val_dataset = get_data_loaders(cfg.batch_size, cfg.data_dir)
+    train_dataset, val_dataset = get_data_loaders(cfg.batch_size, cfg.data_dir)
     print(f"Loaded {len(train_dataset) * cfg.batch_size} recording slices for training.")
     print(f"Loaded {len(val_dataset) * cfg.batch_size} recording slices for validation.")
-    print(f"Loaded {len(test_dataset) * cfg.batch_size} recording slices for testing.")
+    test_dataset = get_data_loaders(cfg.batch_size, cfg.data_dir, test=True)
     print("Dataset loaded.")
 
     print("Loading model...")
     if cfg.model_path:
 
-        checkpoint = torch.load(cfg.model_path)
+        checkpoint = torch.load(cfg.model_path, map_location=torch.device('cpu'))
 
         # Weird bug where the model is saved with "model." prefix but can only be loaded without it
         new_state_dict = {k.replace("model.", ""): v for k, v in checkpoint['state_dict'].items()}
@@ -58,7 +58,7 @@ def training_loop(cfg: DictConfig):
         litModel = LitModel(model=model, learning_rate=cfg.learning_rate)
         print("New model loaded.")
 
-    if not cfg.dev_mode and not cfg.test_only:  # If not in dev mode or just testing, use wandb logger
+    if not cfg.dev_mode:  # If not in dev mode or just testing, use wandb logger
         print("Loading Logger...")
         wandb.login(key=cfg.api_key)
         wandbLogger = WandbLogger(project=cfg.project_name, name=cfg.model, save_dir=cfg.save_dir)
@@ -121,8 +121,6 @@ def training_loop(cfg: DictConfig):
                 # Log the result to wandb
                 wandb.log({"result": fig})
                 print("Results logged.")
-
-            #plt.show()
 
     print("Model evaluated.")
 
