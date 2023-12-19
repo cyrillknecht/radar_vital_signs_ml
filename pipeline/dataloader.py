@@ -35,7 +35,7 @@ class CustomDataset(Dataset):
 
 
 def get_data_loaders(batch_size=8, data_dir="dataset_processed", test=False):
-    custom_dataset = CustomDataset(data_dir)
+    custom_dataset = CustomDataset(data_dir, test=test)
 
     # Ensure that the dataset is not empty
     if len(custom_dataset) == 0:
