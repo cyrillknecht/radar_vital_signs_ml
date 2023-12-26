@@ -56,8 +56,9 @@ def get_data_loaders(batch_size=8, data_dir="dataset_processed", test=False):
         print("Error: Invalid split sizes. Adjust the split ratio or dataset size.")
         return
 
-    train_dataset, val_dataset = torch.utils.data.random_split(custom_dataset,
-                                                               [train_size, val_size])
+    # split deterministic
+    train_dataset = torch.utils.data.Subset(custom_dataset, list(range(train_size)))
+    val_dataset = torch.utils.data.Subset(custom_dataset, list(range(train_size, len(custom_dataset))))
 
     print("Train Dataset Length:", len(train_dataset))
     # Create DataLoader instances for training and validation sets
