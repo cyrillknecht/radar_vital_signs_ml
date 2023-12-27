@@ -34,6 +34,10 @@ def run_inference(cfg: DictConfig):
     Run inference on a test dataset.
     """
 
+    # delete old results file if it exists
+    if os.path.exists(os.path.join(cfg.data_dir, "results.csv")):
+        os.remove(os.path.join(cfg.data_dir, "results.csv"))
+
     # Load the dataset
     print("Loading dataset...")
     dataset = get_data_loaders(cfg.batch_size, cfg.data_dir, test=True)

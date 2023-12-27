@@ -48,7 +48,7 @@ def get_data_loaders(batch_size=8, data_dir="dataset_processed", test=False):
         return train_loader
 
     # Split the dataset into training and validation sets
-    train_size = int(0.8 * len(custom_dataset))
+    train_size = int(0.9 * len(custom_dataset))
     val_size = len(custom_dataset) - train_size
 
     # Ensure that the split sizes are positive
@@ -60,7 +60,10 @@ def get_data_loaders(batch_size=8, data_dir="dataset_processed", test=False):
     train_dataset = torch.utils.data.Subset(custom_dataset, list(range(train_size)))
     val_dataset = torch.utils.data.Subset(custom_dataset, list(range(train_size, len(custom_dataset))))
 
+    # split random
+    # train_dataset, val_dataset = torch.utils.data.random_split(custom_dataset, [train_size, val_size])
     print("Train Dataset Length:", len(train_dataset))
+
     # Create DataLoader instances for training and validation sets
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)

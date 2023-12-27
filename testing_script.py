@@ -16,13 +16,28 @@ from scipy.signal import find_peaks
 from helpers.fmcw_utils import HR_calc_ecg
 
 
-def peak_detection(signal, threshold=0.1):
+def smooth_signal(signal, window_size):
+    """
+    Smoothens a signal using a moving average.
+
+    Parameters:
+        signal (array-like): The input signal.
+        window_size (int): The size of the moving average window.
+
+    Returns:
+        array-like: Smoothed signal.
+    """
+    window = np.ones(window_size) / window_size
+    return np.convolve(signal, window, mode='valid')
+
+
+def peak_detection(signal, prominence=0.7):
     """
     Find peaks in the given ECG and radar signals.
 
     Args:
         signal: ECG or radar signal
-        threshold: threshold for peak detection
+        prominence: prominence for peak detection
         plot: whether to plot the signals
 
     Returns:
@@ -30,8 +45,11 @@ def peak_detection(signal, threshold=0.1):
 
     """
 
+    # flatten signal
+    # signal = smooth_signal(signal, 3)
+
     # peak detection algorithm
-    peaks, _ = find_peaks(signal, prominence=0.3)
+    peaks, _ = find_peaks(signal, prominence=prominence, distance=10)
 
     return peaks
 
@@ -98,7 +116,7 @@ def average_absolute_peak_position_error(ecg_peaks, radar_peaks):
     return average_positional_error
 
 
-def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False):
+def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, prominence=0.7):
     """
     Analyze the results of the model.
 
@@ -106,11 +124,12 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False):
         predicted_ecg_signal: predicted ECG signal
         original_ecg_signal: original ECG signal
         plot: whether to plot the signals
+        prominence:
 
     """
 
     hr, ecg_peaks, filtered, ecg_info = HR_calc_ecg(original_ecg_signal, mode=1, safety_check=False)
-    predicted_ecg_peaks = peak_detection(predicted_ecg_signal, threshold=0.1)
+    predicted_ecg_peaks = peak_detection(predicted_ecg_signal, prominence)
     # print("hr:", hr)
     print("ecg_peaks:", len(ecg_peaks))
     # print("predicted_hr:", len(predicted_ecg_peaks) * 2)
@@ -137,11 +156,12 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False):
     return error_count, avg_abs_peak_pos_error
 
 
-def compare_signals(predicted_ecg_signal, processed_radar_signal, original_ecg_signal, plot=False):
+def compare_signals(predicted_ecg_signal, processed_radar_signal, original_ecg_signal, plot=False, prominence=0.7):
     """
     Compare the original and predicted signal.
 
     Args:
+        prominence:
         predicted_ecg_signal: predicted ECG signal
         processed_radar_signal: processed radar signal
         original_ecg_signal: original ECG signal
@@ -155,18 +175,24 @@ def compare_signals(predicted_ecg_signal, processed_radar_signal, original_ecg_s
 
     """
     print("Analyzing predicted ECG signal...")
-    error_count_prediction, pos_error_prediction = analyze_signal(predicted_ecg_signal, original_ecg_signal, plot)
+    error_count_prediction, pos_error_prediction = analyze_signal(predicted_ecg_signal, original_ecg_signal, plot,
+                                                                  prominence)
     print("Analyzing processed radar signal...")
-    error_count, pos_error = analyze_signal(processed_radar_signal, original_ecg_signal, plot)
+    error_count, pos_error = analyze_signal(processed_radar_signal, original_ecg_signal, plot, prominence)
 
     return error_count_prediction, pos_error_prediction, error_count, pos_error
 
 
-def compare_signal_lists(predicted_ecg_signal_list, processed_radar_signal_list, original_ecg_signal_list, plot=False):
+def compare_signal_lists(predicted_ecg_signal_list,
+                         processed_radar_signal_list,
+                         original_ecg_signal_list,
+                         plot=False,
+                         prominence=0.7):
     """
     Compare the original and predicted signal.
 
     Args:
+        prominence:
         predicted_ecg_signal_list: list of predicted ECG signals
         processed_radar_signal_list: list of processed radar signals
         original_ecg_signal_list: list of original ECG signals
@@ -200,7 +226,8 @@ def compare_signal_lists(predicted_ecg_signal_list, processed_radar_signal_list,
         error_count_prediction, pos_error_prediction, error_count, pos_error = compare_signals(predicted_ecg_signal,
                                                                                                processed_radar_signal,
                                                                                                original_ecg_signal,
-                                                                                               plot)
+                                                                                               plot,
+                                                                                               prominence)
         avg_error_count_prediction += error_count_prediction
         avg_pos_error_prediction += pos_error_prediction
         avg_error_count += error_count
@@ -221,6 +248,7 @@ if __name__ == "__main__":
     # Load the data
     data_dir = "dataset_processed"
     plot = False
+    prominence = 0.7
     ecg_signal_list = pd.read_csv(os.path.join(data_dir, "ecg_test.csv"), header=None).values
     radar_signal_list = pd.read_csv(os.path.join(data_dir, "radar_test.csv"), header=None).values
     predicted_ecg_signal_list = pd.read_csv(os.path.join(data_dir, "results.csv"), header=None).values
@@ -229,7 +257,8 @@ if __name__ == "__main__":
     errors = compare_signal_lists(predicted_ecg_signal_list,
                                   radar_signal_list,
                                   ecg_signal_list,
-                                  plot)
+                                  plot,
+                                  prominence)
 
     print("Average Peak Count Error for Predicted ECG Signals:", round(errors[0], 2))
     print("Average Absolute Peak Position Error for Predicted ECG Signals[ms]:", round(errors[1], 2))

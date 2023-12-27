@@ -38,7 +38,7 @@ class LitModel(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         radar_signal, ecg_signal = batch
         output = self.model(radar_signal)
-        loss = nn.L1Loss()(output, ecg_signal)
+        loss = nn.MSELoss()(output, ecg_signal)
         self.log('test_loss', loss)
 
     def configure_optimizers(self):

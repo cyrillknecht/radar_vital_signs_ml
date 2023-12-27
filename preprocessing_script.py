@@ -87,6 +87,31 @@ def get_sawtooth_signal(input_signal):
     return new_signal
 
 
+def get_binary_signal(input_signal):
+    """
+    Generate a binary signal from the input_signal signal.
+    Args:
+        input_signal(np.array): Loaded ECG signal
+
+    Returns:
+        binary signal generated from signal with original peaks
+
+    """
+    # downsample the signal
+    resampled_signal = scipy.signal.resample(input_signal, 2954)
+
+    # use the existing processing for peaks and filtered resampled input_signal
+    _, peaks, filtered, _ = HR_calc_ecg(resampled_signal, mode=1, safety_check=False)
+
+    # Create a new array of zeros
+    new_signal = np.zeros_like(filtered)
+
+    # Set the values at peak indices to their original values
+    new_signal[peaks] = 1.0
+
+    return new_signal
+
+
 def write_to_csv(signal, filename):
     """
     Append a signal as a new row to a csv file.
@@ -186,7 +211,8 @@ def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_
                 ecg_slice = ecg[int(window_start * frame_time) * ecg_samplingrate:int(
                     window_end * frame_time) * ecg_samplingrate]
                 # process ecg_slice
-                ecg_slice = get_sawtooth_signal(ecg_slice)
+                # ecg_slice = get_sawtooth_signal(ecg_slice)
+                ecg_slice = get_binary_signal(ecg_slice)
 
                 ecg_data_storage.append(ecg_slice)
 
