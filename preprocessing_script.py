@@ -148,19 +148,7 @@ def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_
     radar_data_storage = []
     ecg_data_storage = []
 
-    # delete old directory if it exists
-    if os.path.exists(target_dir):
-        import shutil
-
-        shutil.rmtree(target_dir)
-    # Create a folder for the dataset
-    os.makedirs(target_dir, exist_ok=True)
-
     for subject in subj_list:
-        # Create a folder for the subject if it doesn't exist
-        subject_folder = os.path.join(target_dir, str(subject))
-        os.makedirs(subject_folder, exist_ok=True)
-
         for recording in rec_list:
             ecg_samplingrate = 130
 
@@ -216,29 +204,51 @@ def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_
 
                 ecg_data_storage.append(ecg_slice)
 
-    # split data into train and test
-    radar_data_storage = np.array(radar_data_storage)
-    ecg_data_storage = np.array(ecg_data_storage)
+    return radar_data_storage, ecg_data_storage
 
-    radar_train = radar_data_storage[:int(0.8 * len(radar_data_storage))]
-    radar_test = radar_data_storage[int(0.8 * len(radar_data_storage)):]
-    ecg_train = ecg_data_storage[:int(0.8 * len(ecg_data_storage))]
-    ecg_test = ecg_data_storage[int(0.8 * len(ecg_data_storage)):]
 
-    # save data to csv files
-    np.savetxt(os.path.join(target_dir, "radar_train.csv"), radar_train, delimiter=",")
-    np.savetxt(os.path.join(target_dir, "radar_test.csv"), radar_test, delimiter=",")
-    np.savetxt(os.path.join(target_dir, "ecg_train.csv"), ecg_train, delimiter=",")
-    np.savetxt(os.path.join(target_dir, "ecg_test.csv"), ecg_test, delimiter=",")
+def delete_old_data(target_dir):
+    """
+    Delete all files in the target directory.
+    Args:
+        target_dir: directory to delete files from
 
-    print("Done!")
+    """
+    if os.path.exists(target_dir):
+        import shutil
+        shutil.rmtree(target_dir)
+
+
+def store_data(data, target_dir, filename):
+    os.makedirs(target_dir, exist_ok=True)
+    # save data to csv file
+    np.savetxt(os.path.join(target_dir, filename), data, delimiter=",")
 
 
 if __name__ == "__main__":
+
     TARGET_DIR = "dataset_processed"
+    TRAIN_DATA_FILE = "ecg_train.csv"
+    TRAIN_GT_FILE = "radar_train.csv"
+    TEST_DATA_FILE = "ecg_test.csv"
+    TEST_GT_FILE = "radar_test.csv"
 
     # Process all subjects and recordings
-    subject_list = [i for i in range(0, 25)]
-    recording_list = [i for i in range(0, 3)]
+    train_subject_list = [i for i in range(0, 23)]
+    train_recording_list = [i for i in range(0, 3)]
 
-    preprocess_data(subject_list, recording_list, TARGET_DIR)
+    test_subject_list = [i for i in range(23, 25)]
+    test_recording_list = [i for i in range(0, 3)]
+
+    # Delete old data
+    delete_old_data(TARGET_DIR)
+
+    # Preprocess data
+    radar_train, ecg_train = preprocess_data(train_subject_list, train_recording_list, TARGET_DIR)
+    radar_test, ecg_test = preprocess_data(test_subject_list, test_recording_list, TARGET_DIR)
+
+    # Store data
+    store_data(radar_train, TARGET_DIR, TRAIN_DATA_FILE)
+    store_data(ecg_train, TARGET_DIR, TRAIN_GT_FILE)
+    store_data(radar_test, TARGET_DIR, TEST_DATA_FILE)
+    store_data(ecg_test, TARGET_DIR, TEST_GT_FILE)

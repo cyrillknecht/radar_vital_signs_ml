@@ -248,10 +248,15 @@ if __name__ == "__main__":
     # Load the data
     data_dir = "dataset_processed"
     plot = False
-    prominence = 0.7
-    ecg_signal_list = pd.read_csv(os.path.join(data_dir, "ecg_test.csv"), header=None).values
-    radar_signal_list = pd.read_csv(os.path.join(data_dir, "radar_test.csv"), header=None).values
-    predicted_ecg_signal_list = pd.read_csv(os.path.join(data_dir, "results.csv"), header=None).values
+    prominence = 0.2
+    if plot:
+        ecg_signal_list = pd.read_csv(os.path.join(data_dir, "ecg_test.csv"), header=None).values[-1:, :]
+        radar_signal_list = pd.read_csv(os.path.join(data_dir, "radar_test.csv"), header=None).values[-1:, :]
+        predicted_ecg_signal_list = pd.read_csv(os.path.join(data_dir, "results.csv"), header=None).values[-1:, :]
+    else:
+        ecg_signal_list = pd.read_csv(os.path.join(data_dir, "ecg_test.csv"), header=None).values
+        radar_signal_list = pd.read_csv(os.path.join(data_dir, "radar_test.csv"), header=None).values
+        predicted_ecg_signal_list = pd.read_csv(os.path.join(data_dir, "results.csv"), header=None).values
 
     # Compare the signals
     errors = compare_signal_lists(predicted_ecg_signal_list,
@@ -260,6 +265,7 @@ if __name__ == "__main__":
                                   plot,
                                   prominence)
 
+    # Print the results
     print("Average Peak Count Error for Predicted ECG Signals:", round(errors[0], 2))
     print("Average Absolute Peak Position Error for Predicted ECG Signals[ms]:", round(errors[1], 2))
     print("Average Peak Count Error for Processed Radar Signals:", round(errors[2], 2))
