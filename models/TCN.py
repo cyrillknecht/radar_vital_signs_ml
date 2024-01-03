@@ -65,8 +65,13 @@ class TemporalConvNet(nn.Module):
             dilation_size = 2 ** i
             in_channels = num_inputs if i == 0 else num_channels[i - 1]
             out_channels = num_channels[i]
-            layers += [TemporalBlock(in_channels, out_channels, kernel_size, stride=1, dilation=dilation_size,
-                                     padding=(kernel_size - 1) * dilation_size, dropout=dropout)]
+            layers += [TemporalBlock(n_inputs=in_channels,
+                                     n_outputs=out_channels,
+                                     kernel_size=kernel_size,
+                                     stride=1,
+                                     dilation=dilation_size,
+                                     padding=(kernel_size - 1) * dilation_size,
+                                     dropout=dropout)]
 
         self.network = nn.Sequential(*layers)
 
@@ -75,10 +80,14 @@ class TemporalConvNet(nn.Module):
 
 
 class TCN(nn.Module):
-    def __init__(self, output_size, num_channels, kernel_size=8, dropout=0.0):
+    def __init__(self, channel_sizes, input_size=1, output_size=1, kernel_size=3, dropout=0.2,):
         super(TCN, self).__init__()
-        self.tcn = TemporalConvNet(1, num_channels, kernel_size=kernel_size, dropout=dropout)
-        self.linear = nn.Linear(num_channels[-1], 1)
+        self.tcn = TemporalConvNet(num_inputs=input_size,
+                                   num_channels=channel_sizes,
+                                   kernel_size=kernel_size,
+                                   dropout=dropout)
+        self.linear = nn.Linear(in_features=channel_sizes[-1],
+                                out_features=output_size)
         self.init_weights()
 
     def init_weights(self):

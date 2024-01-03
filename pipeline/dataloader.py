@@ -2,34 +2,37 @@ import os
 import pandas as pd
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
+import h5py
 
 from torch.utils.data import Dataset
 from torch.utils.data import Dataset, DataLoader
 
 
 class CustomDataset(Dataset):
-    def __init__(self, data_dir, test=False):
+    def __init__(self, data_dir, test=False, multi_dim=False):
         super().__init__()
         if test:
-            self.data_files = ["ecg_test.csv", "radar_test.csv"]
+            self.data_files = ["ecg_test", "radar_test"]
         else:
-            self.data_files = ["ecg_train.csv", "radar_train.csv"]
+            self.data_files = ["ecg_train", "radar_train"]
 
         self.data_dir = data_dir
+        self.multi_dim = multi_dim
         self.ecg_data = torch.from_numpy(
-            pd.read_csv(os.path.join(data_dir, self.data_files[0]), header=None).values.astype(np.float32))
+            h5py.File(os.path.join(data_dir, self.data_files[0] + '.h5'), 'r')['dataset'][:].astype(np.float32))
         self.radar_data = torch.from_numpy(
-            pd.read_csv(os.path.join(data_dir, self.data_files[1]), header=None).values.astype(np.float32))
+            h5py.File(os.path.join(data_dir, self.data_files[1] + '.h5'), 'r')['dataset'][:].astype(np.float32))
 
     def __len__(self):
         return len(self.ecg_data)
 
     def __getitem__(self, idx):
         ecg_tensor = self.ecg_data[idx]
+        print(ecg_tensor.shape)
         radar_tensor = self.radar_data[idx]
-
+        print(radar_tensor.shape)
         ecg_tensor = ecg_tensor.unsqueeze(0)
-        radar_tensor = radar_tensor.unsqueeze(0)
 
         return radar_tensor, ecg_tensor
 
@@ -82,12 +85,14 @@ if __name__ == "__main__":
 
     first_batch = next(iter(train_ldr))
     features, labels = first_batch
+
     print("Radar signal batch shape:", features.shape)
     print("ECG signal batch shape:", labels.shape)
+    if features.shape[1] != 1:
+        print("Multi-dimensional radar signal detected.")
+        exit(0)
 
     # Plot the first radar signal
-    import matplotlib.pyplot as plt
-
     plt.plot(features[0, 0, :], label='radar')
     plt.title("Preprocessed Radar Signal")
     plt.show()

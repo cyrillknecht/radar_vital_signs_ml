@@ -66,7 +66,10 @@ def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2
     if model_type == "MLP":
         return MLP(input_size, output_size)
     elif model_type == "TCN":
-        return TCN(output_size, [hidden_size]*num_layers, kernel_size)
+        return TCN(channel_sizes=[hidden_size] * num_layers,
+                   input_size=input_size,
+                   output_size=output_size,
+                   kernel_size=kernel_size)
     elif model_type == "LSTM":
         return LSTM(hidden_size=hidden_size,
                     num_layers=num_layers)

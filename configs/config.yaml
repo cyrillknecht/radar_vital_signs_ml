@@ -5,8 +5,8 @@ save_dir: "outputs"
 api_key: ""
 
 model: TCN
-input_size: 2954
-output_size: 2954
+input_size: 65
+output_size: 1
 hidden_size: 200
 num_layers: 11
 kernel_size: 3
@@ -14,9 +14,9 @@ kernel_size: 3
 max_epochs: 200
 batch_size: 8
 learning_rate: 1e-3
-model_path: "outputs/current_best_300_ep.ckpt"
+model_path: ""
 
-dev_mode: False
+dev_mode: True
 test_only: False
 
 

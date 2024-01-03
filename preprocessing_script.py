@@ -6,6 +6,7 @@ Radar Data is processed using processing algorithms provided by supervisors.
 import datetime
 import os.path
 import csv
+import h5py
 
 import numpy as np
 import scipy.signal
@@ -144,7 +145,7 @@ def get_signals(subj, recording):
     return radar_data, radar_info, ecg
 
 
-def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_duration=30, slice_stride=5):
+def preprocess_data(subj_list, rec_list, multi_dim, slice_start_time=10, slice_duration=30, slice_stride=5):
     radar_data_storage = []
     ecg_data_storage = []
 
@@ -176,24 +177,10 @@ def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_
                 # get the bin where the person is for the current window
                 index, all_bins = find_max_bin(current_range_ffts[..., -1:], mode=1, min_index=8,
                                                window=int(4 // frame_time), step=int(1 // frame_time))
-                print(
-                    f"Person {subject} in recording {recording} is in bin {index} for the window starting"
-                    f" at {int(window_start * frame_time)} seconds"
-                    f"and ending at {int(window_end * frame_time)} seconds.")
 
-                print(f"frame_time: {frame_time}")
-
-                # phase extraction with multibin
-                multibin_phase = extract_phase_multibin(current_range_ffts[:, index - 1:index + 2, -1], alpha=0.995, )
-
-                signal = butt_filt(multibin_phase, 10, 22, 1 / frame_time)
-                hf_signal = peak_envelopes(signal)
-
-                # Normalize signal to range [0, 1]
-                hf_signal = (hf_signal - np.min(hf_signal)) / (np.max(hf_signal) - np.min(hf_signal))
+                hf_signal = phase_extraction(current_range_ffts, index, frame_time, multi_dim)
 
                 radar_data_storage.append(hf_signal)
-                print(f"hf_signal shape: {hf_signal.shape}")
 
                 # Get ecg input_signal slice
                 ecg_slice = ecg[int(window_start * frame_time) * ecg_samplingrate:int(
@@ -204,7 +191,34 @@ def preprocess_data(subj_list, rec_list, target_dir, slice_start_time=10, slice_
 
                 ecg_data_storage.append(ecg_slice)
 
+    print(f"Radar data storage shape: {np.array(radar_data_storage).shape}")
+    print(f"ECG data storage shape: {np.array(ecg_data_storage).shape}")
+
     return radar_data_storage, ecg_data_storage
+
+
+def process_phase_signal(signal, frame_time):
+    signal = butt_filt(signal, 10, 22, 1 / frame_time)
+    hf_signal = peak_envelopes(signal)
+    hf_signal = (hf_signal - np.min(hf_signal)) / (np.max(hf_signal) - np.min(hf_signal))
+    return hf_signal
+
+
+def phase_extraction(current_range_ffts, index, frame_time, multiDim=False):
+    if not multiDim:
+        # phase extraction with multibin
+        multibin_phase = extract_phase_multibin(current_range_ffts[:, index - 1:index + 2, -1], alpha=0.995)
+        hf_signal = process_phase_signal(multibin_phase, frame_time)
+        hf_signal = np.expand_dims(hf_signal, axis=0)
+        return hf_signal
+
+    multidim_hf_signal = []
+    for i in range(current_range_ffts.shape[1]):
+        phase = np.unwrap(np.angle(current_range_ffts[:, i, -1]))
+        hf_signal = process_phase_signal(phase, frame_time)
+        multidim_hf_signal.append(hf_signal)
+
+    return np.array(multidim_hf_signal)
 
 
 def delete_old_data(target_dir):
@@ -221,34 +235,40 @@ def delete_old_data(target_dir):
 
 def store_data(data, target_dir, filename):
     os.makedirs(target_dir, exist_ok=True)
-    # save data to csv file
     np.savetxt(os.path.join(target_dir, filename), data, delimiter=",")
 
 
+def store_data_h5(data, target_dir, filename):
+    os.makedirs(target_dir, exist_ok=True)
+    file_path = os.path.join(target_dir, filename + '.h5')
+
+    with h5py.File(file_path, 'w') as hf:
+        hf.create_dataset('dataset', data=data)
+
+
 if __name__ == "__main__":
-
     TARGET_DIR = "dataset_processed"
-    TRAIN_DATA_FILE = "ecg_train.csv"
-    TRAIN_GT_FILE = "radar_train.csv"
-    TEST_DATA_FILE = "ecg_test.csv"
-    TEST_GT_FILE = "radar_test.csv"
+    TRAIN_DATA_FILE = "radar_train"
+    TRAIN_GT_FILE = "ecg_train"
+    TEST_DATA_FILE = "radar_test"
+    TEST_GT_FILE = "ecg_test"
 
-    # Process all subjects and recordings
-    train_subject_list = [i for i in range(0, 23)]
-    train_recording_list = [i for i in range(0, 3)]
+    MULTI_DIM = True
 
-    test_subject_list = [i for i in range(23, 25)]
-    test_recording_list = [i for i in range(0, 3)]
+    TRAIN_SUBJECTS = [i for i in range(0, 23)]
+    TRAIN_RECORDINGS = [i for i in range(0, 3)]
+    TEST_SUBJECTS = [i for i in range(23, 25)]
+    TEST_RECORDINGS = [i for i in range(0, 3)]
 
     # Delete old data
     delete_old_data(TARGET_DIR)
 
     # Preprocess data
-    radar_train, ecg_train = preprocess_data(train_subject_list, train_recording_list, TARGET_DIR)
-    radar_test, ecg_test = preprocess_data(test_subject_list, test_recording_list, TARGET_DIR)
+    radar_train, ecg_train = preprocess_data(TRAIN_SUBJECTS, TRAIN_RECORDINGS, MULTI_DIM)
+    radar_test, ecg_test = preprocess_data(TEST_SUBJECTS, TEST_RECORDINGS, MULTI_DIM)
 
     # Store data
-    store_data(radar_train, TARGET_DIR, TRAIN_DATA_FILE)
-    store_data(ecg_train, TARGET_DIR, TRAIN_GT_FILE)
-    store_data(radar_test, TARGET_DIR, TEST_DATA_FILE)
-    store_data(ecg_test, TARGET_DIR, TEST_GT_FILE)
+    store_data_h5(radar_train, TARGET_DIR, TRAIN_DATA_FILE)
+    store_data_h5(ecg_train, TARGET_DIR, TRAIN_GT_FILE)
+    store_data_h5(radar_test, TARGET_DIR, TEST_DATA_FILE)
+    store_data_h5(ecg_test, TARGET_DIR, TEST_GT_FILE)
