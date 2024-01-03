@@ -29,9 +29,7 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         ecg_tensor = self.ecg_data[idx]
-        print(ecg_tensor.shape)
         radar_tensor = self.radar_data[idx]
-        print(radar_tensor.shape)
         ecg_tensor = ecg_tensor.unsqueeze(0)
 
         return radar_tensor, ecg_tensor

@@ -46,7 +46,7 @@ class LitModel(pl.LightningModule):
         return optimizer
 
 
-def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2, kernel_size=3):
+def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2, kernel_size=3, signal_length=2954):
     """
     Get the model for the given type.
 
@@ -58,6 +58,7 @@ def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2
         hidden_size: size of hidden layers in the model
         num_layers: number of layers in the model
         kernel_size: size of the kernel for the TCN model
+        signal_length:
 
     Returns:
             initiated model for the given type
@@ -69,7 +70,9 @@ def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2
         return TCN(channel_sizes=[hidden_size] * num_layers,
                    input_size=input_size,
                    output_size=output_size,
-                   kernel_size=kernel_size)
+                   kernel_size=kernel_size,
+                   dropout=0.2
+                   )
     elif model_type == "LSTM":
         return LSTM(hidden_size=hidden_size,
                     num_layers=num_layers)

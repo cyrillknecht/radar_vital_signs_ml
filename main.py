@@ -43,8 +43,13 @@ def training_loop(cfg: DictConfig):
         # Weird bug where the model is saved with "model." prefix but can only be loaded without it
         new_state_dict = {k.replace("model.", ""): v for k, v in checkpoint['state_dict'].items()}
 
-        model = get_model(model_type=cfg.model, input_size=cfg.input_size, output_size=cfg.output_size,
-                          hidden_size=cfg.hidden_size, num_layers=cfg.num_layers, kernel_size=cfg.kernel_size)
+        model = get_model(model_type=cfg.model,
+                          input_size=cfg.input_size,
+                          output_size=cfg.output_size,
+                          hidden_size=cfg.hidden_size,
+                          num_layers=cfg.num_layers,
+                          kernel_size=cfg.kernel_size,
+                          signal_length=cfg.signal_length)
 
         litModel = LitModel(model=model, learning_rate=cfg.learning_rate)
 

@@ -186,8 +186,8 @@ def preprocess_data(subj_list, rec_list, multi_dim, slice_start_time=10, slice_d
                 ecg_slice = ecg[int(window_start * frame_time) * ecg_samplingrate:int(
                     window_end * frame_time) * ecg_samplingrate]
                 # process ecg_slice
-                # ecg_slice = get_sawtooth_signal(ecg_slice)
-                ecg_slice = get_binary_signal(ecg_slice)
+                ecg_slice = get_sawtooth_signal(ecg_slice)
+                # ecg_slice = get_binary_signal(ecg_slice)
 
                 ecg_data_storage.append(ecg_slice)
 
@@ -200,7 +200,10 @@ def preprocess_data(subj_list, rec_list, multi_dim, slice_start_time=10, slice_d
 def process_phase_signal(signal, frame_time):
     signal = butt_filt(signal, 10, 22, 1 / frame_time)
     hf_signal = peak_envelopes(signal)
-    hf_signal = (hf_signal - np.min(hf_signal)) / (np.max(hf_signal) - np.min(hf_signal))
+    if np.max(hf_signal) - np.min(hf_signal) == 0:
+        hf_signal = np.zeros_like(hf_signal)
+    else:
+        hf_signal = (hf_signal - np.min(hf_signal)) / (np.max(hf_signal) - np.min(hf_signal))
     return hf_signal
 
 

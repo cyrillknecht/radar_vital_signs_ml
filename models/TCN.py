@@ -20,8 +20,12 @@ class Chomp1d(nn.Module):
 class TemporalBlock(nn.Module):
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2):
         super(TemporalBlock, self).__init__()
-        self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size,
-                                           stride=stride, padding=padding, dilation=dilation))
+        self.conv1 = weight_norm(nn.Conv1d(in_channels=n_inputs,
+                                           out_channels=n_outputs,
+                                           kernel_size=kernel_size,
+                                           stride=stride,
+                                           padding=padding,
+                                           dilation=dilation))
         self.chomp1 = Chomp1d(padding)
         self.relu1 = nn.ReLU()
         self.dropout1 = nn.Dropout(dropout)
@@ -80,7 +84,7 @@ class TemporalConvNet(nn.Module):
 
 
 class TCN(nn.Module):
-    def __init__(self, channel_sizes, input_size=1, output_size=1, kernel_size=3, dropout=0.2,):
+    def __init__(self, channel_sizes, input_size=1, output_size=1, kernel_size=3, dropout=0.2):
         super(TCN, self).__init__()
         self.tcn = TemporalConvNet(num_inputs=input_size,
                                    num_channels=channel_sizes,

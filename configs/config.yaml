@@ -8,15 +8,16 @@ model: TCN
 input_size: 65
 output_size: 1
 hidden_size: 200
+signal_length: 2954
 num_layers: 11
 kernel_size: 3
 
-max_epochs: 200
+max_epochs: 10
 batch_size: 8
 learning_rate: 1e-3
 model_path: ""
 
-dev_mode: True
+dev_mode: False
 test_only: False
 
 
