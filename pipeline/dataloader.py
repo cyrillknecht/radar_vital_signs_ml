@@ -10,7 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class CustomDataset(Dataset):
-    def __init__(self, data_dir, test=False, multi_dim=False):
+    def __init__(self, data_dir, test=False):
         super().__init__()
         if test:
             self.data_files = ["ecg_test", "radar_test"]
@@ -18,7 +18,6 @@ class CustomDataset(Dataset):
             self.data_files = ["ecg_train", "radar_train"]
 
         self.data_dir = data_dir
-        self.multi_dim = multi_dim
         self.ecg_data = torch.from_numpy(
             h5py.File(os.path.join(data_dir, self.data_files[0] + '.h5'), 'r')['dataset'][:].astype(np.float32))
         self.radar_data = torch.from_numpy(
@@ -28,9 +27,8 @@ class CustomDataset(Dataset):
         return len(self.ecg_data)
 
     def __getitem__(self, idx):
-        ecg_tensor = self.ecg_data[idx]
         radar_tensor = self.radar_data[idx]
-        ecg_tensor = ecg_tensor.unsqueeze(0)
+        ecg_tensor = self.ecg_data[idx]
 
         return radar_tensor, ecg_tensor
 

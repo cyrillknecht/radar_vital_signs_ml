@@ -9,6 +9,8 @@ from models.RNN import RNN
 from models.Transformer import Transformer
 
 
+# TDOO: add weight to loss function for class imbalance
+
 class LitModel(pl.LightningModule):
     """
     Wrapper class for the models to use with PyTorch Lightning.
@@ -25,20 +27,29 @@ class LitModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         radar_signal, ecg_signal = batch
         output = self.model(radar_signal)
-        loss = nn.MSELoss()(output, ecg_signal)
+        if output.shape[1] == 1:  # if regression
+            loss = nn.MSELoss()(output, ecg_signal)
+        else:  # if classification
+            loss = nn.CrossEntropyLoss()(output, ecg_signal)
         self.log('train_loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         radar_signal, ecg_signal = batch
         output = self.model(radar_signal)
-        loss = nn.MSELoss()(output, ecg_signal)
+        if output.shape[1] == 1:
+            loss = nn.MSELoss()(output, ecg_signal)
+        else:
+            loss = nn.CrossEntropyLoss()(output, ecg_signal)
         self.log('val_loss', loss)
 
     def test_step(self, batch, batch_idx):
         radar_signal, ecg_signal = batch
         output = self.model(radar_signal)
-        loss = nn.MSELoss()(output, ecg_signal)
+        if output.shape[1] == 1:
+            loss = nn.MSELoss()(output, ecg_signal)
+        else:
+            loss = nn.CrossEntropyLoss()(output, ecg_signal)
         self.log('test_loss', loss)
 
     def configure_optimizers(self):

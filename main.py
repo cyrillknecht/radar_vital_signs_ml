@@ -110,6 +110,9 @@ def training_loop(cfg: DictConfig):
 
             # plot the result against the target, time steps are on the x-axis
             frame_time = 0.01015455
+            if len(target.shape) == 1:
+                target = torch.unsqueeze(target, 0)
+
             t_signal = np.array(list(range(len(target[0, :])))) * frame_time
 
             plt.plot(t_signal, target[0, :].numpy(), label='target')

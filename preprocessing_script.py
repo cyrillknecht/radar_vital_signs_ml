@@ -7,6 +7,7 @@ import datetime
 import os.path
 import csv
 import h5py
+import torch
 
 import numpy as np
 import scipy.signal
@@ -14,6 +15,8 @@ import scipy.signal
 from helpers.envelopes import peak_envelopes
 from helpers.fmcw_utils import range_fft, HR_calc_ecg, extract_phase_multibin, find_max_bin, butt_filt
 
+
+# TODO: Add information about slice start time, duration and stride to the files
 
 def read_ecg(filename):
     """Reader function for the ecg data
@@ -72,7 +75,7 @@ def get_sawtooth_signal(input_signal):
     # Create a new array of zeros
     new_signal = np.zeros_like(filtered)
 
-    # Set the values at peak indices to their original values
+    # Set the values at peak indices to 1
     new_signal[peaks] = 1.0
 
     # Linearly interpolate between the peaks
@@ -84,6 +87,9 @@ def get_sawtooth_signal(input_signal):
 
         # Update the new input_signal
         new_signal[start_idx:end_idx + 1] = interpolation
+
+    # Unsqueeze the signal
+    new_signal = np.expand_dims(new_signal, axis=0)
 
     return new_signal
 
@@ -108,9 +114,14 @@ def get_binary_signal(input_signal):
     new_signal = np.zeros_like(filtered)
 
     # Set the values at peak indices to their original values
-    new_signal[peaks] = 1.0
+    new_signal[peaks] = 1
 
-    return new_signal
+    # One hot encode the signal
+    new_signal_tensor = torch.from_numpy(new_signal).to(torch.int64)
+    new_signal_one_hot = torch.nn.functional.one_hot(new_signal_tensor, num_classes=2).numpy()
+    new_signal_one_hot = np.transpose(new_signal_one_hot)
+
+    return new_signal_one_hot
 
 
 def write_to_csv(signal, filename):
@@ -145,7 +156,13 @@ def get_signals(subj, recording):
     return radar_data, radar_info, ecg
 
 
-def preprocess_data(subj_list, rec_list, multi_dim, slice_start_time=10, slice_duration=30, slice_stride=5):
+def preprocess_data(subj_list,
+                    rec_list,
+                    multi_dim=False,
+                    mode="sawtooth",
+                    slice_start_time=10,
+                    slice_duration=30,
+                    slice_stride=5):
     radar_data_storage = []
     ecg_data_storage = []
 
@@ -186,8 +203,10 @@ def preprocess_data(subj_list, rec_list, multi_dim, slice_start_time=10, slice_d
                 ecg_slice = ecg[int(window_start * frame_time) * ecg_samplingrate:int(
                     window_end * frame_time) * ecg_samplingrate]
                 # process ecg_slice
-                ecg_slice = get_sawtooth_signal(ecg_slice)
-                # ecg_slice = get_binary_signal(ecg_slice)
+                if mode == "sawtooth":
+                    ecg_slice = get_sawtooth_signal(ecg_slice)
+                elif mode == "binary classification":
+                    ecg_slice = get_binary_signal(ecg_slice)
 
                 ecg_data_storage.append(ecg_slice)
 
@@ -236,11 +255,6 @@ def delete_old_data(target_dir):
         shutil.rmtree(target_dir)
 
 
-def store_data(data, target_dir, filename):
-    os.makedirs(target_dir, exist_ok=True)
-    np.savetxt(os.path.join(target_dir, filename), data, delimiter=",")
-
-
 def store_data_h5(data, target_dir, filename):
     os.makedirs(target_dir, exist_ok=True)
     file_path = os.path.join(target_dir, filename + '.h5')
@@ -250,6 +264,7 @@ def store_data_h5(data, target_dir, filename):
 
 
 if __name__ == "__main__":
+    # Config
     TARGET_DIR = "dataset_processed"
     TRAIN_DATA_FILE = "radar_train"
     TRAIN_GT_FILE = "ecg_train"
@@ -257,6 +272,7 @@ if __name__ == "__main__":
     TEST_GT_FILE = "ecg_test"
 
     MULTI_DIM = True
+    MODE = "binary classification"
 
     TRAIN_SUBJECTS = [i for i in range(0, 23)]
     TRAIN_RECORDINGS = [i for i in range(0, 3)]
@@ -267,11 +283,25 @@ if __name__ == "__main__":
     delete_old_data(TARGET_DIR)
 
     # Preprocess data
-    radar_train, ecg_train = preprocess_data(TRAIN_SUBJECTS, TRAIN_RECORDINGS, MULTI_DIM)
-    radar_test, ecg_test = preprocess_data(TEST_SUBJECTS, TEST_RECORDINGS, MULTI_DIM)
+    radar_train, ecg_train = preprocess_data(subj_list=TRAIN_SUBJECTS,
+                                             rec_list=TRAIN_RECORDINGS,
+                                             multi_dim=MULTI_DIM,
+                                             mode=MODE)
+    radar_test, ecg_test = preprocess_data(subj_list=TEST_SUBJECTS,
+                                           rec_list=TEST_RECORDINGS,
+                                           multi_dim=MULTI_DIM,
+                                           mode=MODE)
 
     # Store data
-    store_data_h5(radar_train, TARGET_DIR, TRAIN_DATA_FILE)
-    store_data_h5(ecg_train, TARGET_DIR, TRAIN_GT_FILE)
-    store_data_h5(radar_test, TARGET_DIR, TEST_DATA_FILE)
-    store_data_h5(ecg_test, TARGET_DIR, TEST_GT_FILE)
+    store_data_h5(data=radar_train,
+                  target_dir=TARGET_DIR,
+                  filename=TRAIN_DATA_FILE)
+    store_data_h5(data=ecg_train,
+                  target_dir=TARGET_DIR,
+                  filename=TRAIN_GT_FILE)
+    store_data_h5(data=radar_test,
+                  target_dir=TARGET_DIR,
+                  filename=TEST_DATA_FILE)
+    store_data_h5(data=ecg_test,
+                  target_dir=TARGET_DIR,
+                  filename=TEST_GT_FILE)
