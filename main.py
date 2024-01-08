@@ -18,6 +18,35 @@ from models.LightningModel import get_model, LitModel
 from pipeline.dataloader import get_data_loaders
 
 
+def get_plot(result, target, frame_time):
+    if len(target.shape) == 1:
+        print("Debug: had to unsqueeze target")
+        target = torch.unsqueeze(target, 0)
+
+    if target.shape[0] > 1:  # If classification
+        target = target.argmax(axis=0)
+        target = torch.unsqueeze(target, 0)
+
+        result = result[0].argmax(axis=0)
+        result = torch.unsqueeze(result, 0)
+
+    else:
+        result = result[0]
+
+    t_signal = np.array(list(range(len(target[0, :])))) * frame_time
+
+    plt.plot(t_signal, target[0, :].numpy(), label='target')
+    plt.plot(t_signal, result[0, 0, :].numpy(), label='prediction')
+    plt.legend()
+    plt.xlabel("Time [s]")
+    plt.ylabel("Normalized Amplitude")
+    plt.title("ECG Prediction")
+
+    fig = plt.gcf()
+
+    return fig
+
+
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def training_loop(cfg: DictConfig):
     if not cfg.api_key and not cfg.dev_mode:
@@ -99,9 +128,9 @@ def training_loop(cfg: DictConfig):
     print("Evaluating model...")
     trainer.test(litModel, test_dataset, verbose=True)
 
-    if cfg.dev_mode:
-        print("Training finished. Running in dev mode, so not logging results.")
-        return
+    #if cfg.dev_mode:
+    #    print("Training finished. Running in dev mode, so not logging results.")
+    #    return
 
     print("Generating plotted results...")
     for batch in test_dataset:
@@ -120,32 +149,6 @@ def training_loop(cfg: DictConfig):
     print("Training finished.")
 
     return
-
-
-def get_plot(result, target, frame_time):
-    if len(target.shape) == 1:
-        print("Debug: had to unsqueeze target")
-        target = torch.unsqueeze(target, 0)
-
-    if target.shape[0] > 1:  # If classification
-        target = target.argmax(axis=0)
-        target = torch.unsqueeze(target, 0)
-
-        result = result[0].argmax(axis=0)
-        result = torch.unsqueeze(result, 0)
-
-    t_signal = np.array(list(range(len(target[0, :])))) * frame_time
-
-    plt.plot(t_signal, target[0, :].numpy(), label='target')
-    plt.plot(t_signal, result[0, 0, :].numpy(), label='prediction')
-    plt.legend()
-    plt.xlabel("Time [s]")
-    plt.ylabel("Normalized Amplitude")
-    plt.title("ECG Prediction")
-
-    fig = plt.gcf()
-
-    return fig
 
 
 if __name__ == "__main__":
