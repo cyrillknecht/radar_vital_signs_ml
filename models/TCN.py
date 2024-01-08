@@ -5,7 +5,7 @@ TCN model from https://github.com/locuslab/TCN
 (https://arxiv.org/abs/1803.01271)
 """
 import torch.nn as nn
-from torch.nn.utils import weight_norm
+from torch.nn.utils.parametrizations import weight_norm
 
 
 class Chomp1d(nn.Module):
@@ -92,6 +92,9 @@ class TCN(nn.Module):
                                    dropout=dropout)
         self.linear = nn.Linear(in_features=channel_sizes[-1],
                                 out_features=output_size)
+
+        self.softmax = nn.Softmax(dim=1)
+
         self.init_weights()
 
     def init_weights(self):
@@ -99,7 +102,9 @@ class TCN(nn.Module):
 
     def forward(self, x):
         y1 = self.tcn(x)
-        y1_transpose = y1.transpose(1, 2)
-        y2 = self.linear(y1_transpose)
-        y2 = y2.transpose(1, 2)
-        return y2
+        y1_t = y1.transpose(1, 2)
+        y2 = self.linear(y1_t)
+        y2_t = y2.transpose(1, 2)
+        y3 = self.softmax(y2_t)
+
+        return y3
