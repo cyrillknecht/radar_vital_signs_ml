@@ -32,6 +32,9 @@ class MLP(nn.Module):
         # Dropout regularization
         self.dropout = nn.Dropout(p=dropout_rate)
 
+        # Softmax
+        self.softmax = nn.Softmax(dim=1)
+
     def forward(self, x):
         # Input layer
         x = F.relu(self.input_layer(x))
@@ -44,5 +47,6 @@ class MLP(nn.Module):
 
         # Output layer
         x = self.output_layer(x)
+        x = self.softmax(x)
 
         return x
