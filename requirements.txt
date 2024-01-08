@@ -1,9 +1,11 @@
 lightning~=2.1.2
-numpy==1.26.2
-matplotlib==3.8.2
-scipy==1.11.4
+numpy~=1.26.0
+matplotlib~=3.8.0
+scipy~=1.11.3
 heartpy~=1.2.7
-neurokit2==0.2.7
-pandas==2.1.4
-wandb==0.16.1
+neurokit2~=0.2.6
+pandas~=2.1.2
+wandb~=0.16.0
 omegaconf~=2.3.0
+h5py~=3.9.0
+hydra
