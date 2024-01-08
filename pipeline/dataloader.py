@@ -43,7 +43,6 @@ def get_data_loaders(batch_size=8, data_dir="dataset_processed", test=False):
 
     if test:  # if testing, don't split into train and val
         train_loader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=False)
-        print(train_loader)
         return train_loader
 
     # Split the dataset into training and validation sets
