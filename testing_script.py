@@ -9,6 +9,8 @@ Average Absolute Peak Position Error
 
 import numpy as np
 import pandas as pd
+import h5py
+import torch
 import matplotlib.pyplot as plt
 import os
 from scipy.signal import find_peaks
@@ -127,12 +129,12 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, promin
         prominence:
 
     """
+    if len(original_ecg_signal.shape) == 2: # If classification
+        original_ecg_signal = original_ecg_signal.argmax(axis=0)
 
     hr, ecg_peaks, filtered, ecg_info = HR_calc_ecg(original_ecg_signal, mode=1, safety_check=False)
     predicted_ecg_peaks = peak_detection(predicted_ecg_signal, prominence)
-    # print("hr:", hr)
     print("ecg_peaks:", len(ecg_peaks))
-    # print("predicted_hr:", len(predicted_ecg_peaks) * 2)
     print("predicted_ecg_peaks:", len(predicted_ecg_peaks))
 
     error_count = peak_count_error(ecg_peaks, predicted_ecg_peaks)
@@ -249,7 +251,7 @@ if __name__ == "__main__":
     data_dir = "dataset_processed"
     plot = False
     prominence = 0.2
-    if plot:
+    """if plot:
         ecg_signal_list = pd.read_csv(os.path.join(data_dir, "ecg_test.csv"), header=None).values[-1:, :]
         radar_signal_list = pd.read_csv(os.path.join(data_dir, "radar_test.csv"), header=None).values[-1:, :]
         predicted_ecg_signal_list = pd.read_csv(os.path.join(data_dir, "results.csv"), header=None).values[-1:, :]
@@ -257,6 +259,14 @@ if __name__ == "__main__":
         ecg_signal_list = pd.read_csv(os.path.join(data_dir, "ecg_test.csv"), header=None).values
         radar_signal_list = pd.read_csv(os.path.join(data_dir, "radar_test.csv"), header=None).values
         predicted_ecg_signal_list = pd.read_csv(os.path.join(data_dir, "results.csv"), header=None).values
+"""
+    # Load the data from h5 files
+    ecg_signal_list = torch.from_numpy(
+        h5py.File(os.path.join(data_dir, "ecg_test.h5"), 'r')['dataset'][:].astype(np.float32)).squeeze(1)
+    radar_signal_list = torch.from_numpy(
+        h5py.File(os.path.join(data_dir, "radar_test_1d.h5"), 'r')['dataset'][:].astype(np.float32)).squeeze(1)
+    predicted_ecg_signal_list = torch.from_numpy(
+        h5py.File(os.path.join(data_dir, "results.h5"), 'r')['dataset'][:].astype(np.float32)).squeeze(1)
 
     # Compare the signals
     errors = compare_signal_lists(predicted_ecg_signal_list,

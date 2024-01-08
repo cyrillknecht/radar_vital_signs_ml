@@ -13,6 +13,7 @@ from omegaconf import DictConfig
 import hydra
 from pipeline.dataloader import get_data_loaders
 import csv
+import h5py
 
 
 def write_to_csv(signal, filename):
@@ -38,7 +39,6 @@ def run_inference(cfg: DictConfig):
     if os.path.exists(os.path.join(cfg.data_dir, "results.csv")):
         os.remove(os.path.join(cfg.data_dir, "results.csv"))
 
-    # Load the dataset
     print("Loading dataset...")
     dataset = get_data_loaders(cfg.batch_size, cfg.data_dir, test=True)
 
@@ -59,7 +59,6 @@ def run_inference(cfg: DictConfig):
 
     print("Loaded  model from checkpoint.")
 
-    # Run inference on the test dataset
     print("Running inference...")
     trainer = pl.Trainer(enable_model_summary=True,
                          deterministic=True,
@@ -67,17 +66,30 @@ def run_inference(cfg: DictConfig):
                          default_root_dir=cfg.save_dir,
                          )
 
+    result_signal_list = []
     for batch in dataset:
         features, targets = batch
         for feature, _ in zip(features, targets):
             sample = torch.unsqueeze(torch.unsqueeze(feature, 0), 0)
             result = trainer.predict(litModel, sample)
-            result_signal = result[0][0][0].detach().numpy()
+            result_signal = result[0].squeeze(0).detach().numpy()
+            if result_signal.shape[0] > 1:
+                result_signal = result_signal.argmax(axis=0)
+            result_signal_list.append(result_signal)
 
-            # Save the result
-            write_to_csv(result_signal, os.path.join(cfg.data_dir, "results.csv"))
+    # Save the result h5
+    result_signal_list = np.array(result_signal_list)
+    store_data_h5(result_signal_list, cfg.data_dir, "results")
 
     print("Inference done.")
+
+
+def store_data_h5(data, target_dir, filename):
+    os.makedirs(target_dir, exist_ok=True)
+    file_path = os.path.join(target_dir, filename + '.h5')
+
+    with h5py.File(file_path, 'w') as hf:
+        hf.create_dataset('dataset', data=data)
 
 
 if __name__ == "__main__":

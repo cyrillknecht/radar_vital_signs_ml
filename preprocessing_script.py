@@ -6,8 +6,11 @@ Radar Data is processed using processing algorithms provided by supervisors.
 import datetime
 import os.path
 import csv
+import time
+
 import h5py
 import torch
+import shutil
 
 import numpy as np
 import scipy.signal
@@ -237,8 +240,8 @@ def phase_extraction(current_range_ffts, index, frame_time, multiDim=False):
     multidim_hf_signal = []
     for i in range(current_range_ffts.shape[1]):
         phase = np.unwrap(np.angle(current_range_ffts[:, i, -1]))
-        hf_signal = process_phase_signal(phase, frame_time)
-        multidim_hf_signal.append(hf_signal)
+        hf_signal_multi = process_phase_signal(phase, frame_time)
+        multidim_hf_signal.append(hf_signal_multi)
 
     return np.array(multidim_hf_signal)
 
@@ -251,7 +254,6 @@ def delete_old_data(target_dir):
 
     """
     if os.path.exists(target_dir):
-        import shutil
         shutil.rmtree(target_dir)
 
 
@@ -270,14 +272,18 @@ if __name__ == "__main__":
     TRAIN_GT_FILE = "ecg_train"
     TEST_DATA_FILE = "radar_test"
     TEST_GT_FILE = "ecg_test"
+    ONE_DIM_TEST_DATA_FILE = "radar_test_1d"
 
-    MULTI_DIM = True
-    MODE = "binary classification"
+    MULTI_DIM = False
+    MODE = "sawtooth"
 
     TRAIN_SUBJECTS = [i for i in range(0, 23)]
     TRAIN_RECORDINGS = [i for i in range(0, 3)]
     TEST_SUBJECTS = [i for i in range(23, 25)]
     TEST_RECORDINGS = [i for i in range(0, 3)]
+
+    # Measure time
+    start_time = time.time()
 
     # Delete old data
     delete_old_data(TARGET_DIR)
@@ -292,6 +298,12 @@ if __name__ == "__main__":
                                            multi_dim=MULTI_DIM,
                                            mode=MODE)
 
+    # We always need one-dimensional data for testing
+    one_dim_radar_test, _ = preprocess_data(subj_list=TEST_SUBJECTS,
+                                            rec_list=TEST_RECORDINGS,
+                                            multi_dim=False,
+                                            mode=MODE)
+
     # Store data
     store_data_h5(data=radar_train,
                   target_dir=TARGET_DIR,
@@ -305,3 +317,10 @@ if __name__ == "__main__":
     store_data_h5(data=ecg_test,
                   target_dir=TARGET_DIR,
                   filename=TEST_GT_FILE)
+
+    store_data_h5(data=one_dim_radar_test,
+                  target_dir=TARGET_DIR,
+                  filename=ONE_DIM_TEST_DATA_FILE)
+
+    end_time = time.time()
+    print(f"Preprocessing took {round(end_time - start_time)} seconds.")
