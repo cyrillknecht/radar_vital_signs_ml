@@ -16,14 +16,14 @@ model: TCN # LSTM, GRU, RNN, MLP, TCN
 models:
   TCN:
     run_name: ""
-    input_size: 1
-    output_size: 1
+    input_size: 1 # 1, 130
+    output_size: 1 # 1, 2
     hidden_size: 200
     num_layers: 11
     kernel_size: 3
 
   LSTM:
-    run_name: ""
+    run_name: "_test_1d_regression"
     input_size: 2954
     output_size: 2954
     hidden_size: 2048
@@ -60,7 +60,7 @@ inference:
   model_path: ""
 
 testing:
-  plot: False
+  plot: True
   prominence: 0.7
   wandb_log: True
 
