@@ -13,6 +13,7 @@ import torch
 import shutil
 import numpy as np
 import scipy.signal
+import warnings
 
 from omegaconf import DictConfig
 from helpers.envelopes import peak_envelopes
@@ -279,6 +280,9 @@ def preprocess(target_dir,
                mode="sawtooth",
                files=None,
                data_dir="dataset"):
+
+    # Suppress warnings from scipy
+    warnings.filterwarnings("ignore", category=UserWarning, module='scipy.interpolate._fitpack2')
     recordings = [i for i in range(0, 3)]
 
     if not files:
