@@ -9,7 +9,7 @@ from models.RNN import RNN
 from models.Transformer import Transformer
 
 
-# TDOO: add weight to loss function for class imbalance
+# TODO: add weight to loss function for class imbalance
 
 class LitModel(pl.LightningModule):
     """
@@ -25,36 +25,30 @@ class LitModel(pl.LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        radar_signal, ecg_signal = batch
-        output = self.model(radar_signal)
-        if output.shape[1] == 1:  # if regression
-            loss = nn.MSELoss()(output, ecg_signal)
-        else:  # if classification
-            loss = nn.CrossEntropyLoss()(output, ecg_signal)
-        self.log('train_loss', loss)
+        loss = self.step(batch)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        radar_signal, ecg_signal = batch
-        output = self.model(radar_signal)
-        if output.shape[1] == 1:
-            loss = nn.MSELoss()(output, ecg_signal)
-        else:
-            loss = nn.CrossEntropyLoss()(output, ecg_signal)
+        loss = self.step(batch)
         self.log('val_loss', loss)
 
     def test_step(self, batch, batch_idx):
-        radar_signal, ecg_signal = batch
-        output = self.model(radar_signal)
-        if output.shape[1] == 1:
-            loss = nn.MSELoss()(output, ecg_signal)
-        else:
-            loss = nn.CrossEntropyLoss()(output, ecg_signal)
+        loss = self.step(batch)
         self.log('test_loss', loss)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
+
+    def step(self, batch):
+        radar_signal, ecg_signal = batch
+        output = self.model(radar_signal)
+        if output.shape[1] == 1:
+            loss = nn.MSELoss(reduction='sum')(output, ecg_signal)
+        else:
+            loss = nn.CrossEntropyLoss(reduction='sum', weight=torch.tensor([1, 80]))(output, ecg_signal)
+
+        return loss
 
 
 def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2, kernel_size=3, signal_length=2954):
