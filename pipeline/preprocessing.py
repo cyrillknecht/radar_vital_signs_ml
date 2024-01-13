@@ -39,6 +39,9 @@ def phase_extraction(current_range_ffts, index, frame_time, multiDim=False):
 
     multidim_hf_signal = []
     for i in range(current_range_ffts.shape[1]):
+        # Magnitude extraction
+        magnitude = np.abs(current_range_ffts[:, i, -1])
+
         # Multibin phase extraction
         if i - 1 < 0 or i + 2 > current_range_ffts.shape[1]:
             phase = np.unwrap(np.angle(current_range_ffts[:, i, -1]))
@@ -50,6 +53,7 @@ def phase_extraction(current_range_ffts, index, frame_time, multiDim=False):
 
         hf_signal_multi = process_phase_signal(phase, frame_time)
         multidim_hf_signal.append(hf_signal_multi)
+        multidim_hf_signal.append(magnitude)
 
     return np.array(multidim_hf_signal)
 
@@ -271,7 +275,7 @@ def preprocess(target_dir,
                train_subjects,
                val_subjects,
                test_subjects,
-               multi_dim=False,
+               multi_dim=True,
                mode="sawtooth",
                files=None,
                data_dir="dataset"):
@@ -359,13 +363,13 @@ def preprocessing_hydra(cfg: DictConfig):
     VAL_SUBJECTS = [23]
     TEST_SUBJECTS = [24]
 
-    preprocess(target_dir=cfg.dirs.data_dir,
+    preprocess(target_dir="../" + cfg.dirs.data_dir,
                train_subjects=TRAIN_SUBJECTS,
                val_subjects=VAL_SUBJECTS,
                test_subjects=TEST_SUBJECTS,
                multi_dim=cfg.preprocessing.multi_dim,
                mode=cfg.preprocessing.mode,
-               data_dir=cfg.dirs.unprocessed_data_dir)
+               data_dir="../" + cfg.dirs.unprocessed_data_dir)
 
 
 if __name__ == "__main__":
