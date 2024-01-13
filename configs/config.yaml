@@ -1,24 +1,69 @@
-project_name: "radar-ecg"
-data_dir: "dataset_processed"
-unprocessed_data_dir: "dataset"
-save_dir: "outputs"
-api_key: ""
+wandb:
+  project_name: "radar-ecg-results"
+  api_key: ""
 
-model: TCN
-input_size: 1
-output_size: 1
-hidden_size: 200
-signal_length: 2954
-frame_time: 0.01015455
-num_layers: 11
-kernel_size: 3
+dirs:
+  data_dir: "dataset_processed"
+  unprocessed_data_dir: "dataset"
+  save_dir: "outputs"
 
-max_epochs: 1
-batch_size: 8
-learning_rate: 1e-3
-model_path: ""
+data:
+  signal_length: 2954
+  frame_time: 0.01015455
 
-dev_mode: False
-test_only: False
+model: TCN # LSTM, GRU, RNN, MLP, TCN
+
+models:
+  TCN:
+    run_name: ""
+    input_size: 1
+    output_size: 1
+    hidden_size: 200
+    num_layers: 11
+    kernel_size: 3
+
+  LSTM:
+    run_name: ""
+    input_size: 2954
+    output_size: 2954
+    hidden_size: 2048
+    num_layers: 2
+    kernel_size: 0
+
+  GRU:
+    run_name: ""
+    input_size: 2954
+    output_size: 2954
+    hidden_size: 2048
+    num_layers: 2
+    kernel_size: 0
+
+  RNN:
+    run_name: ""
+    input_size: 2954
+    output_size: 2954
+    hidden_size: 2048
+    num_layers: 2
+    kernel_size: 0
+
+preprocessing:
+  multi_dim: False
+  mode: "sawtooth" # "sawtooth", "binary classification"
+
+training:
+  max_epochs: 1
+  batch_size: 8
+  learning_rate: 1e-3
+  dev_mode: False
+
+inference:
+  model_path: ""
+
+testing:
+  plot: False
+  prominence: 0.7
+  wandb_log: True
+
+
 
 

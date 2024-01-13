@@ -6,15 +6,16 @@ Peak Count Error,
 Average Absolute Peak Position Error
 
 """
-
+import hydra
 import numpy as np
-import pandas as pd
+import wandb
 import h5py
 import torch
 import matplotlib.pyplot as plt
 import os
-from scipy.signal import find_peaks
 
+from omegaconf import DictConfig
+from scipy.signal import find_peaks
 from helpers.fmcw_utils import HR_calc_ecg
 
 
@@ -129,7 +130,7 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, promin
         prominence:
 
     """
-    if len(original_ecg_signal.shape) == 2: # If classification
+    if len(original_ecg_signal.shape) == 2:  # If classification
         original_ecg_signal = original_ecg_signal.argmax(axis=0)
 
     hr, ecg_peaks, filtered, ecg_info = HR_calc_ecg(original_ecg_signal, mode=1, safety_check=False)
@@ -246,20 +247,7 @@ def compare_signal_lists(predicted_ecg_signal_list,
     return avg_error_count_prediction, avg_pos_error_prediction, avg_error_count, avg_pos_error
 
 
-if __name__ == "__main__":
-    # Load the data
-    data_dir = "dataset_processed"
-    plot = False
-    prominence = 0.2
-    """if plot:
-        ecg_signal_list = pd.read_csv(os.path.join(data_dir, "ecg_test.csv"), header=None).values[-1:, :]
-        radar_signal_list = pd.read_csv(os.path.join(data_dir, "radar_test.csv"), header=None).values[-1:, :]
-        predicted_ecg_signal_list = pd.read_csv(os.path.join(data_dir, "results.csv"), header=None).values[-1:, :]
-    else:
-        ecg_signal_list = pd.read_csv(os.path.join(data_dir, "ecg_test.csv"), header=None).values
-        radar_signal_list = pd.read_csv(os.path.join(data_dir, "radar_test.csv"), header=None).values
-        predicted_ecg_signal_list = pd.read_csv(os.path.join(data_dir, "results.csv"), header=None).values
-"""
+def testing(data_dir, plot, prominence, wandb_log=False):
     # Load the data from h5 files
     ecg_signal_list = torch.from_numpy(
         h5py.File(os.path.join(data_dir, "ecg_test.h5"), 'r')['dataset'][:].astype(np.float32)).squeeze(1)
@@ -268,15 +256,40 @@ if __name__ == "__main__":
     predicted_ecg_signal_list = torch.from_numpy(
         h5py.File(os.path.join(data_dir, "results.h5"), 'r')['dataset'][:].astype(np.float32)).squeeze(1)
 
+    if plot:  # Plot only the first 10 signals
+        ecg_signal_list = ecg_signal_list[:10]
+        radar_signal_list = radar_signal_list[:10]
+        predicted_ecg_signal_list = predicted_ecg_signal_list[:10]
+
     # Compare the signals
     errors = compare_signal_lists(predicted_ecg_signal_list,
                                   radar_signal_list,
                                   ecg_signal_list,
-                                  plot,
-                                  prominence)
+                                  plot=plot,
+                                  prominence=prominence)
 
     # Print the results
     print("Average Peak Count Error for Predicted ECG Signals:", round(errors[0], 2))
     print("Average Absolute Peak Position Error for Predicted ECG Signals[ms]:", round(errors[1], 2))
     print("Average Peak Count Error for Processed Radar Signals:", round(errors[2], 2))
     print("Average Absolute Peak Position Error for Processed Radar Signals[ms]:", round(errors[3], 2))
+
+    if wandb_log:
+        wandb.log({"Average Peak Count Error for Predicted ECG Signals": errors[0],
+                   "Average Absolute Peak Position Error for Predicted ECG Signals[ms]": errors[1],
+                   "Average Peak Count Error for Processed Radar Signals": errors[2],
+                   "Average Absolute Peak Position Error for Processed Radar Signals[ms]": errors[3]})
+
+
+@hydra.main(version_base="1.2", config_path="../configs", config_name="config")
+def testing_hydra(cfg: DictConfig):
+    hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
+    if cfg.testing.wandb_log:
+        wandb.login(key=cfg.wandb.api_key)
+        wandb.init(project=cfg.wandb.project_name, name="Test Run")
+
+    testing(cfg.dirs.data_dir, cfg.testing.plot, cfg.testing.prominence, cfg.testing.wandb_log)
+
+
+if __name__ == "__main__":
+    testing_hydra()

@@ -7,19 +7,65 @@ import datetime
 import os.path
 import csv
 import time
-
 import h5py
+import hydra
 import torch
 import shutil
-
 import numpy as np
 import scipy.signal
 
+from omegaconf import DictConfig
 from helpers.envelopes import peak_envelopes
 from helpers.fmcw_utils import range_fft, HR_calc_ecg, extract_phase_multibin, find_max_bin, butt_filt
 
 
 # TODO: Add information about slice start time, duration and stride to the files
+def process_phase_signal(signal, frame_time):
+    signal = butt_filt(signal, 10, 22, 1 / frame_time)
+    hf_signal = peak_envelopes(signal)
+    if np.max(hf_signal) - np.min(hf_signal) == 0:
+        hf_signal = np.zeros_like(hf_signal)
+    else:
+        hf_signal = (hf_signal - np.min(hf_signal)) / (np.max(hf_signal) - np.min(hf_signal))
+    return hf_signal
+
+
+def phase_extraction(current_range_ffts, index, frame_time, multiDim=False):
+    if not multiDim:
+        multibin_phase = extract_phase_multibin(current_range_ffts[:, index - 1:index + 2, -1], alpha=0.995)
+        hf_signal = process_phase_signal(multibin_phase, frame_time)
+        hf_signal = np.expand_dims(hf_signal, axis=0)
+        return hf_signal
+
+    multidim_hf_signal = []
+    for i in range(current_range_ffts.shape[1]):
+        # Multibin phase extraction
+        if i - 1 < 0 or i + 2 > current_range_ffts.shape[1]:
+            phase = np.unwrap(np.angle(current_range_ffts[:, i, -1]))
+        else:
+            phase = extract_phase_multibin(current_range_ffts[:, i - 1:i + 2, -1], alpha=0.995)
+
+        # Normal phase extraction
+        # phase = np.unwrap(np.angle(current_range_ffts[:, i, -1]))
+
+        hf_signal_multi = process_phase_signal(phase, frame_time)
+        multidim_hf_signal.append(hf_signal_multi)
+
+    return np.array(multidim_hf_signal)
+
+
+def delete_old_data(target_dir):
+    if os.path.exists(target_dir):
+        shutil.rmtree(target_dir)
+
+
+def store_data_h5(data, target_dir, filename):
+    os.makedirs(target_dir, exist_ok=True)
+    file_path = os.path.join(target_dir, filename + '.h5')
+
+    with h5py.File(file_path, 'w') as hf:
+        hf.create_dataset('dataset', data=data)
+
 
 def read_ecg(filename):
     """Reader function for the ecg data
@@ -91,7 +137,7 @@ def get_sawtooth_signal(input_signal):
         # Update the new input_signal
         new_signal[start_idx:end_idx + 1] = interpolation
 
-    # Unsqueeze the signal
+    # Un-squeeze the signal
     new_signal = np.expand_dims(new_signal, axis=0)
 
     return new_signal
@@ -140,21 +186,22 @@ def write_to_csv(signal, filename):
         writer.writerow(signal)
 
 
-def get_signals(subj, recording):
+def get_signals(subj, recording, data_dir="dataset"):
     """
     Get the radar data from its files and ecg input_signal for a given subject and recording.
     Args:
         subj(int): subject number
         recording(int): recording number
+        data_dir:
 
     Returns:
         tuple of radar data and ecg input_signal for the given subject and recording
 
     """
 
-    radar_data, radar_info = read_radar_data_npz(os.path.join("dataset", str(subj), f"recording_{recording}_60GHz.npz"))
+    radar_data, radar_info = read_radar_data_npz(os.path.join(data_dir, str(subj), f"recording_{recording}_60GHz.npz"))
 
-    ecg, _ = read_ecg(os.path.join("dataset", str(subj), f"recording_{recording}_ecg.txt"))
+    ecg, _ = read_ecg(os.path.join(data_dir, str(subj), f"recording_{recording}_ecg.txt"))
 
     return radar_data, radar_info, ecg
 
@@ -165,7 +212,8 @@ def preprocess_data(subj_list,
                     mode="sawtooth",
                     slice_start_time=10,
                     slice_duration=30,
-                    slice_stride=5):
+                    slice_stride=5,
+                    data_dir="dataset"):
     radar_data_storage = []
     ecg_data_storage = []
 
@@ -173,7 +221,7 @@ def preprocess_data(subj_list,
         for recording in rec_list:
             ecg_samplingrate = 130
 
-            radar_data, radar_info, ecg = get_signals(subject, recording)
+            radar_data, radar_info, ecg = get_signals(subject, recording, data_dir=data_dir)
 
             # get rid of the shape group repetitions as we only have one
             radar_data = radar_data[:, 0]
@@ -219,108 +267,109 @@ def preprocess_data(subj_list,
     return radar_data_storage, ecg_data_storage
 
 
-def process_phase_signal(signal, frame_time):
-    signal = butt_filt(signal, 10, 22, 1 / frame_time)
-    hf_signal = peak_envelopes(signal)
-    if np.max(hf_signal) - np.min(hf_signal) == 0:
-        hf_signal = np.zeros_like(hf_signal)
-    else:
-        hf_signal = (hf_signal - np.min(hf_signal)) / (np.max(hf_signal) - np.min(hf_signal))
-    return hf_signal
+def preprocess(target_dir,
+               train_subjects,
+               val_subjects,
+               test_subjects,
+               multi_dim=False,
+               mode="sawtooth",
+               files=None,
+               data_dir="dataset"):
+    recordings = [i for i in range(0, 3)]
 
-
-def phase_extraction(current_range_ffts, index, frame_time, multiDim=False):
-    if not multiDim:
-        # phase extraction with multibin
-        multibin_phase = extract_phase_multibin(current_range_ffts[:, index - 1:index + 2, -1], alpha=0.995)
-        hf_signal = process_phase_signal(multibin_phase, frame_time)
-        hf_signal = np.expand_dims(hf_signal, axis=0)
-        return hf_signal
-
-    multidim_hf_signal = []
-    for i in range(current_range_ffts.shape[1]):
-        phase = np.unwrap(np.angle(current_range_ffts[:, i, -1]))
-        hf_signal_multi = process_phase_signal(phase, frame_time)
-        multidim_hf_signal.append(hf_signal_multi)
-
-    return np.array(multidim_hf_signal)
-
-
-def delete_old_data(target_dir):
-    """
-    Delete all files in the target directory.
-    Args:
-        target_dir: directory to delete files from
-
-    """
-    if os.path.exists(target_dir):
-        shutil.rmtree(target_dir)
-
-
-def store_data_h5(data, target_dir, filename):
-    os.makedirs(target_dir, exist_ok=True)
-    file_path = os.path.join(target_dir, filename + '.h5')
-
-    with h5py.File(file_path, 'w') as hf:
-        hf.create_dataset('dataset', data=data)
-
-
-if __name__ == "__main__":
-    # Config
-    TARGET_DIR = "dataset_processed"
-    TRAIN_DATA_FILE = "radar_train"
-    TRAIN_GT_FILE = "ecg_train"
-    TEST_DATA_FILE = "radar_test"
-    TEST_GT_FILE = "ecg_test"
-    ONE_DIM_TEST_DATA_FILE = "radar_test_1d"
-
-    MULTI_DIM = False
-    MODE = "sawtooth"
-
-    TRAIN_SUBJECTS = [i for i in range(0, 23)]
-    TRAIN_RECORDINGS = [i for i in range(0, 3)]
-    TEST_SUBJECTS = [i for i in range(23, 25)]
-    TEST_RECORDINGS = [i for i in range(0, 3)]
+    if not files:
+        files = {"train_data_file": "radar_train",
+                 "train_gt_file": "ecg_train",
+                 "val_data_file": "radar_val",
+                 "val_gt_file": "ecg_val",
+                 "test_data_file": "radar_test",
+                 "test_gt_file": "ecg_test",
+                 "one_dim_test_data_file": "radar_test_1d"}
 
     # Measure time
     start_time = time.time()
 
     # Delete old data
-    delete_old_data(TARGET_DIR)
+    delete_old_data(target_dir)
 
     # Preprocess data
-    radar_train, ecg_train = preprocess_data(subj_list=TRAIN_SUBJECTS,
-                                             rec_list=TRAIN_RECORDINGS,
-                                             multi_dim=MULTI_DIM,
-                                             mode=MODE)
-    radar_test, ecg_test = preprocess_data(subj_list=TEST_SUBJECTS,
-                                           rec_list=TEST_RECORDINGS,
-                                           multi_dim=MULTI_DIM,
-                                           mode=MODE)
+    radar_train, ecg_train = preprocess_data(subj_list=train_subjects,
+                                             rec_list=recordings,
+                                             multi_dim=multi_dim,
+                                             mode=mode,
+                                             data_dir=data_dir)
+
+    radar_val, ecg_val = preprocess_data(subj_list=val_subjects,
+                                         rec_list=recordings,
+                                         multi_dim=multi_dim,
+                                         mode=mode,
+                                         data_dir=data_dir)
+
+    radar_test, ecg_test = preprocess_data(subj_list=test_subjects,
+                                           rec_list=recordings,
+                                           multi_dim=multi_dim,
+                                           mode=mode,
+                                           data_dir=data_dir)
 
     # We always need one-dimensional data for testing
-    one_dim_radar_test, _ = preprocess_data(subj_list=TEST_SUBJECTS,
-                                            rec_list=TEST_RECORDINGS,
+    one_dim_radar_test, _ = preprocess_data(subj_list=test_subjects,
+                                            rec_list=recordings,
                                             multi_dim=False,
-                                            mode=MODE)
+                                            mode=mode,
+                                            data_dir=data_dir)
 
     # Store data
     store_data_h5(data=radar_train,
-                  target_dir=TARGET_DIR,
-                  filename=TRAIN_DATA_FILE)
+                  target_dir=target_dir,
+                  filename=files["train_data_file"])
+
     store_data_h5(data=ecg_train,
-                  target_dir=TARGET_DIR,
-                  filename=TRAIN_GT_FILE)
+                  target_dir=target_dir,
+                  filename=files["train_gt_file"])
+
+    store_data_h5(data=radar_val,
+                  target_dir=target_dir,
+                  filename=files["val_data_file"])
+
+    store_data_h5(data=ecg_val,
+                  target_dir=target_dir,
+                  filename=files["val_gt_file"])
+
     store_data_h5(data=radar_test,
-                  target_dir=TARGET_DIR,
-                  filename=TEST_DATA_FILE)
+                  target_dir=target_dir,
+                  filename=files["test_data_file"])
+
     store_data_h5(data=ecg_test,
-                  target_dir=TARGET_DIR,
-                  filename=TEST_GT_FILE)
+                  target_dir=target_dir,
+                  filename=files["test_gt_file"])
 
     store_data_h5(data=one_dim_radar_test,
-                  target_dir=TARGET_DIR,
-                  filename=ONE_DIM_TEST_DATA_FILE)
+                  target_dir=target_dir,
+                  filename=files["one_dim_test_data_file"])
 
     end_time = time.time()
     print(f"Preprocessing took {round(end_time - start_time)} seconds.")
+
+
+@hydra.main(version_base="1.2", config_path="../configs", config_name="config")
+def preprocessing_hydra(cfg: DictConfig):
+    hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
+
+    TRAIN_SUBJECTS = [i for i in range(0, 23)]
+    VAL_SUBJECTS = [23]
+    TEST_SUBJECTS = [24]
+
+    preprocess(target_dir=cfg.dirs.data_dir,
+               train_subjects=TRAIN_SUBJECTS,
+               val_subjects=VAL_SUBJECTS,
+               test_subjects=TEST_SUBJECTS,
+               multi_dim=cfg.preprocessing.multi_dim,
+               mode=cfg.preprocessing.mode,
+               data_dir=cfg.dirs.unprocessed_data_dir)
+
+
+if __name__ == "__main__":
+    preprocessing_hydra()
+
+
+
