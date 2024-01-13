@@ -119,7 +119,7 @@ def average_absolute_peak_position_error(ecg_peaks, radar_peaks):
     return average_positional_error
 
 
-def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, prominence=0.7):
+def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, prominence=0.7, wandb_log=False):
     """
     Analyze the results of the model.
 
@@ -154,12 +154,23 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, promin
         plt.legend(["Predicted ECG", "Original ECG", "Original Peaks", "Predicted Peaks"])
         plt.title(f"Peak Count Error {round(error_count, 2)}  and "
                   f" Avg. Peak Pos. Error {round(avg_abs_peak_pos_error, 2)}ms")
-        plt.show()
+        if wandb_log:
+            fig = plt.gcf()
+            wandb.log({"Peak Count Error": error_count,
+                          "Average Absolute Peak Position Error[ms]": avg_abs_peak_pos_error,
+                          "ECG Prediction": fig})
+        else:
+            plt.show()
 
     return error_count, avg_abs_peak_pos_error
 
 
-def compare_signals(predicted_ecg_signal, processed_radar_signal, original_ecg_signal, plot=False, prominence=0.7):
+def compare_signals(predicted_ecg_signal,
+                    processed_radar_signal,
+                    original_ecg_signal,
+                    plot=False,
+                    prominence=0.7,
+                    wandb_log=False):
     """
     Compare the original and predicted signal.
 
@@ -179,9 +190,9 @@ def compare_signals(predicted_ecg_signal, processed_radar_signal, original_ecg_s
     """
     print("Analyzing predicted ECG signal...")
     error_count_prediction, pos_error_prediction = analyze_signal(predicted_ecg_signal, original_ecg_signal, plot,
-                                                                  prominence)
+                                                                  prominence, wandb_log)
     print("Analyzing processed radar signal...")
-    error_count, pos_error = analyze_signal(processed_radar_signal, original_ecg_signal, plot, prominence)
+    error_count, pos_error = analyze_signal(processed_radar_signal, original_ecg_signal, plot, prominence, wandb_log)
 
     return error_count_prediction, pos_error_prediction, error_count, pos_error
 
@@ -190,24 +201,8 @@ def compare_signal_lists(predicted_ecg_signal_list,
                          processed_radar_signal_list,
                          original_ecg_signal_list,
                          plot=False,
-                         prominence=0.7):
-    """
-    Compare the original and predicted signal.
-
-    Args:
-        prominence:
-        predicted_ecg_signal_list: list of predicted ECG signals
-        processed_radar_signal_list: list of processed radar signals
-        original_ecg_signal_list: list of original ECG signals
-        plot: whether to plot the signals
-
-    Returns:
-        peak count error for the predicted ECG signal
-        average absolute peak position error for the predicted ECG signal
-        peak count error for the processed radar signal
-        average absolute peak position error for the processed radar signal
-
-    """
+                         prominence=0.7,
+                         wandb_log=False):
 
     avg_error_count_prediction = 0
     avg_pos_error_prediction = 0
@@ -230,7 +225,8 @@ def compare_signal_lists(predicted_ecg_signal_list,
                                                                                                processed_radar_signal,
                                                                                                original_ecg_signal,
                                                                                                plot,
-                                                                                               prominence)
+                                                                                               prominence,
+                                                                                               wandb_log)
         avg_error_count_prediction += error_count_prediction
         avg_pos_error_prediction += pos_error_prediction
         avg_error_count += error_count
@@ -256,7 +252,7 @@ def testing(data_dir, plot, prominence, wandb_log=False):
     predicted_ecg_signal_list = torch.from_numpy(
         h5py.File(os.path.join(data_dir, "results.h5"), 'r')['dataset'][:].astype(np.float32)).squeeze(1)
 
-    if plot:  # Plot only the first 10 signals
+    if plot and not wandb_log:  # Plot only the first 10 signals locally to avoid problems with too many plots
         ecg_signal_list = ecg_signal_list[:10]
         radar_signal_list = radar_signal_list[:10]
         predicted_ecg_signal_list = predicted_ecg_signal_list[:10]
@@ -266,7 +262,8 @@ def testing(data_dir, plot, prominence, wandb_log=False):
                                   radar_signal_list,
                                   ecg_signal_list,
                                   plot=plot,
-                                  prominence=prominence)
+                                  prominence=prominence,
+                                  wandb_log=wandb_log)
 
     # Print the results
     print("Average Peak Count Error for Predicted ECG Signals:", round(errors[0], 2))
@@ -286,7 +283,7 @@ def testing_hydra(cfg: DictConfig):
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
     if cfg.testing.wandb_log:
         wandb.login(key=cfg.wandb.api_key)
-        wandb.init(project=cfg.wandb.project_name, name="Test Run")
+        wandb.init(project=cfg.wandb.project_name, name="Test Run", dir=cfg.dirs.save_dir)
 
     testing(cfg.dirs.data_dir, cfg.testing.plot, cfg.testing.prominence, cfg.testing.wandb_log)
 

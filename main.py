@@ -2,9 +2,9 @@
 Run this to do a complete preprocessing, training, and inference run.
 """
 import wandb
-from omegaconf import DictConfig
 import hydra
 
+from omegaconf import DictConfig
 from pipeline.preprocessing import preprocess
 from pipeline.training import training
 from pipeline.inference import inference
