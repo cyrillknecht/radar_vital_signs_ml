@@ -33,7 +33,7 @@ class MLP(nn.Module):
         self.dropout = nn.Dropout(p=dropout_rate)
 
         # Softmax
-        self.softmax = nn.Softmax(dim=1)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         # Input layer
@@ -47,6 +47,6 @@ class MLP(nn.Module):
 
         # Output layer
         x = self.output_layer(x)
-        x = self.softmax(x)
+        x = self.sigmoid(x)
 
         return x

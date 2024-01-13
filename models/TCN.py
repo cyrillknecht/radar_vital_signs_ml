@@ -93,7 +93,7 @@ class TCN(nn.Module):
         self.linear = nn.Linear(in_features=channel_sizes[-1],
                                 out_features=output_size)
 
-        self.softmax = nn.Softmax(dim=1)
+        self.sigmoid = nn.Sigmoid()
 
         self.init_weights()
 
@@ -105,6 +105,6 @@ class TCN(nn.Module):
         y1_t = y1.transpose(1, 2)
         y2 = self.linear(y1_t)
         y2_t = y2.transpose(1, 2)
-        y3 = self.softmax(y2_t)
+        y3 = self.sigmoid(y2_t)
 
         return y3
