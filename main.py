@@ -21,11 +21,11 @@ def run_training_pipeline(cfg,
     """
 
     if train_subjects is None:
-        train_subjects = [0]
+        train_subjects = [x for x in range(25) if x != 0 and x != 1]
     if val_subjects is None:
-        val_subjects = [22]
+        val_subjects = [0]
     if test_subjects is None:
-        test_subjects = [23, 24]
+        test_subjects = [1]
 
     preprocess(target_dir=cfg.dirs.data_dir,
                train_subjects=train_subjects,
@@ -68,7 +68,7 @@ def leave_one_out_training(cfg):
     Run the complete pipeline for all subjects.
     """
     for i in range(1, 24):
-        train_subjects = [x for x in range(25) if x != i]
+        train_subjects = [x for x in range(1, 25) if x != i]
         val_subjects = [0]
         test_subjects = [i]
         print("Now running leave-one-out for subject: ", i)
