@@ -88,7 +88,7 @@ def main(cfg: DictConfig):
     # Run only one training run
     if cfg.main.mode == "train":
         print("Running training pipeline...")
-        run_training_pipeline(cfg, left_out_subject=cfg.main.left_out_subject)
+        run_training_pipeline(cfg)
 
     # Run only one test run
     elif cfg.main.mode == "test":

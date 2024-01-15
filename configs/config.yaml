@@ -11,7 +11,7 @@ data:
   signal_length: 2954
   frame_time: 0.01015455
 
-model: TCN # LSTM, GRU, RNN, MLP, TCN
+model: LSTM # LSTM, GRU, RNN, MLP, TCN
 
 models:
   TCN:
@@ -24,37 +24,37 @@ models:
 
   LSTM:
     run_name: "_test_1d_regression"
-    input_size: 2954
-    output_size: 2954
-    hidden_size: 2048
+    input_size: 130
+    output_size: 2
+    hidden_size: 200
     num_layers: 2
     kernel_size: 0
 
   GRU:
-    run_name: ""
-    input_size: 2954
-    output_size: 2954
-    hidden_size: 2048
+    run_name: "_test_1d_regression"
+    input_size: 130
+    output_size: 2
+    hidden_size: 200
     num_layers: 2
     kernel_size: 0
 
   RNN:
-    run_name: ""
-    input_size: 2954
-    output_size: 2954
-    hidden_size: 2048
+    run_name: "_test_1d_regression"
+    input_size: 130
+    output_size: 2
+    hidden_size: 200
     num_layers: 2
     kernel_size: 0
 
 preprocessing:
-  multi_dim: False
+  multi_dim: True
   mode: "sawtooth" # "sawtooth", "binary classification"
 
 training:
-  max_epochs: 1
+  max_epochs: 100
   batch_size: 8
   learning_rate: 1e-3
-  dev_mode: False
+  dev_mode: True
 
 inference:
   model_path: ""
