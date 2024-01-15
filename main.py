@@ -9,6 +9,7 @@ from pipeline.preprocessing import preprocess
 from pipeline.training import training
 from pipeline.inference import inference
 from pipeline.testing import testing
+from lightning.pytorch import seed_everything
 
 
 def run_training_pipeline(cfg,
@@ -84,6 +85,7 @@ def leave_one_out_training(cfg):
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config")
 def main(cfg: DictConfig):
+    seed_everything(42, workers=True)
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
     # Run only one training run
     if cfg.main.mode == "train":
@@ -93,7 +95,7 @@ def main(cfg: DictConfig):
     # Run only one test run
     elif cfg.main.mode == "test":
         print("Running test pipeline...")
-        run_test_pipeline(cfg, cfg.main.model_path)
+        run_test_pipeline(cfg)
 
     # Run complete pipeline
     elif cfg.main.mode == "full":
