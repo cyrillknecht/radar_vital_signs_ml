@@ -87,6 +87,7 @@ def leave_one_out_training(cfg):
 def main(cfg: DictConfig):
     seed_everything(42, workers=True)
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
+
     # Run only one training run
     if cfg.main.mode == "train":
         print("Running training pipeline...")

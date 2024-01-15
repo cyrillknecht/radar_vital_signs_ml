@@ -53,12 +53,7 @@ def peak_detection(signal, prominence=0.7):
 
         return peaks
 
-    print("Testing orginal signal")
-    print(signal)
     binary_signal = signal.argmax(axis=0)
-    print("Testing result")
-    print(binary_signal)
-    print("1 found" if 1 in binary_signal else "no 1")
 
     # Find all peaks
     peak_indices = np.where(binary_signal == 1)[0]

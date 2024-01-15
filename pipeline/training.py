@@ -26,17 +26,9 @@ def get_plot(result, target, frame_time):
     if target.shape[0] > 1:  # If classification
         target = target.argmax(axis=0)
         target = torch.unsqueeze(target, 0)
-        print("Target")
-        print(target)
-        print("1 found " if 1 in target else "no 1")
 
-        print("Original result")
-        print(result[0])
         result = result[0]
         result = result.argmax(axis=0)
-        print("Result")
-        print(result)
-        print("1 found" if 1 in result else "no 1")
         result = torch.unsqueeze(result, 0)
 
     else:
