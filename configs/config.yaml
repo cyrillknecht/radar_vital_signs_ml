@@ -64,6 +64,9 @@ testing:
   prominence: 0.7
   wandb_log: True
 
+main:
+    mode: "train" # "train", "test", "full", "leave_one_out"
+
 
 
 

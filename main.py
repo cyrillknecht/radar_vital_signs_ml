@@ -20,6 +20,9 @@ def run_training_pipeline(cfg,
     Run the complete pipeline.
     """
 
+    if not train_subjects or not val_subjects or not test_subjects:
+        print("No subjects provided. Using default values.")
+
     if train_subjects is None:
         train_subjects = [x for x in range(25) if x != 0 and x != 1]
     if val_subjects is None:
@@ -83,16 +86,27 @@ def leave_one_out_training(cfg):
 def main(cfg: DictConfig):
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
     # Run only one training run
-    # run_training_pipeline(cfg)
+    if cfg.main.mode == "train":
+        print("Running training pipeline...")
+        run_training_pipeline(cfg, left_out_subject=cfg.main.left_out_subject)
 
     # Run only one test run
-    # run_test_pipeline(cfg)
+    elif cfg.main.mode == "test":
+        print("Running test pipeline...")
+        run_test_pipeline(cfg, cfg.main.model_path)
 
     # Run complete pipeline
-    # full_pipeline(cfg)
+    elif cfg.main.mode == "full":
+        print("Running full pipeline...")
+        full_pipeline(cfg)
 
     # Run complete training with all subjects as test subjects
-    leave_one_out_training(cfg)
+    elif cfg.main.mode == "leave_one_out":
+        print("Running leave-one-out training...")
+        leave_one_out_training(cfg)
+
+    else:
+        raise ValueError("Invalid mode. Must be one of: train, test, full, leave_one_out")
 
 
 if __name__ == "__main__":
