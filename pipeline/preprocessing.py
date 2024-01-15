@@ -363,9 +363,9 @@ def preprocess(target_dir,
 def preprocessing_hydra(cfg: DictConfig):
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
 
-    TRAIN_SUBJECTS = [i for i in range(0, 23)]
-    VAL_SUBJECTS = [23]
-    TEST_SUBJECTS = [24]
+    TRAIN_SUBJECTS = [i for i in range(2, 25)]
+    VAL_SUBJECTS = [0]
+    TEST_SUBJECTS = [1]
 
     preprocess(target_dir="../" + cfg.dirs.data_dir,
                train_subjects=TRAIN_SUBJECTS,

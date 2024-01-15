@@ -98,7 +98,7 @@ def main(cfg: DictConfig):
         print("Running test pipeline...")
         run_test_pipeline(cfg)
 
-    # Run complete pipeline
+    # Run the complete pipeline
     elif cfg.main.mode == "full":
         print("Running full pipeline...")
         full_pipeline(cfg)

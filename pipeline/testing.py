@@ -65,7 +65,7 @@ def peak_detection(signal, prominence=0.7):
         peak_group = [peak_indices[i]]
         i += 1
         # Group adjacent peaks
-        while i < len(peak_indices) and peak_indices[i] == peak_indices[i - 1] + 1:
+        while i < len(peak_indices) and peak_indices[i] <= peak_indices[i - 1] + 20:
             peak_group.append(peak_indices[i])
             i += 1
 
