@@ -68,8 +68,6 @@ def inference(cfg):
             sample = torch.unsqueeze(torch.unsqueeze(feature, 0), 0)
             result = trainer.predict(litModel, sample)
             result_signal = result[0].squeeze(0).detach().numpy()
-            if result_signal.shape[0] > 1:
-                result_signal = result_signal.argmax(axis=0)
             result_signal_list.append(result_signal)
 
     # Save the result h5

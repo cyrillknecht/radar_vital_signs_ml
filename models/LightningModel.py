@@ -31,6 +31,7 @@ class LitModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         loss = self.step(batch)
+        self.log('train_loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -49,9 +50,9 @@ class LitModel(pl.LightningModule):
         radar_signal, ecg_signal = batch
         output = self.model(radar_signal)
         if output.shape[1] == 1:
-            loss = nn.MSELoss(reduction='sum')(output, ecg_signal)
+            loss = nn.MSELoss(reduction='mean')(output, ecg_signal)
         else:
-            loss = (nn.CrossEntropyLoss(reduction='sum', weight=torch.tensor([1, 80], device=self.device))
+            loss = (nn.CrossEntropyLoss(reduction='mean', weight=torch.tensor([1, 80], device=self.device))
                     (output, ecg_signal))
 
         return loss

@@ -48,11 +48,37 @@ def peak_detection(signal, prominence=0.7):
 
     """
 
-    # flatten signal
-    # signal = smooth_signal(signal, 3)
+    if len(signal.shape) == 1:  # If regression
+        peaks, _ = find_peaks(signal, prominence=prominence, distance=10)
 
-    # peak detection algorithm
-    peaks, _ = find_peaks(signal, prominence=prominence, distance=10)
+        return peaks
+
+    print("Testing orginal signal")
+    print(signal)
+    binary_signal = signal.argmax(axis=0)
+    print("Testing result")
+    print(binary_signal)
+    print("1 found" if 1 in binary_signal else "no 1")
+
+    # Find all peaks
+    peak_indices = np.where(binary_signal == 1)[0]
+
+    # Group adjacent peaks and find the one with the highest probability
+    peaks = []
+    i = 0
+    while i < len(peak_indices):
+        peak_group = [peak_indices[i]]
+        i += 1
+        # Group adjacent peaks
+        while i < len(peak_indices) and peak_indices[i] == peak_indices[i - 1] + 1:
+            peak_group.append(peak_indices[i])
+            i += 1
+
+        # Select peak with the highest probability from the original signal
+        peak_with_highest_prob = max(peak_group, key=lambda x: signal[1, x])
+        peaks.append(peak_with_highest_prob)
+
+    peaks = np.array(peaks)
 
     return peaks
 
@@ -110,7 +136,7 @@ def average_absolute_peak_position_error(ecg_peaks, radar_peaks):
         to_delete = len(radar_peaks) - len(ecg_peaks)
         # sort positional errors
         positional_errors.sort()
-        # delete the to_delete largest positional errors since they have no corresponding peak in the ecg signal
+        # delete the to_delete the largest positional errors since they have no corresponding peak in the ecg signal
         positional_errors = positional_errors[:-to_delete]
 
     # Calculate the average absolute positional error
@@ -147,6 +173,9 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, promin
     avg_abs_peak_pos_error *= 30 * 1000 / len(original_ecg_signal)
 
     if plot:
+        if len(predicted_ecg_signal.shape) == 2:  # If classification
+            predicted_ecg_signal = predicted_ecg_signal.argmax(axis=0)
+
         plt.plot(predicted_ecg_signal)
         plt.plot(original_ecg_signal)
         plt.plot(ecg_peaks, original_ecg_signal[ecg_peaks], "x")
@@ -157,8 +186,8 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, promin
         if wandb_log:
             fig = plt.gcf()
             wandb.log({"Peak Count Error": error_count,
-                          "Average Absolute Peak Position Error[ms]": avg_abs_peak_pos_error,
-                          "ECG Prediction": fig})
+                       "Average Absolute Peak Position Error[ms]": avg_abs_peak_pos_error,
+                       "ECG Prediction": fig})
         else:
             plt.show()
 
@@ -203,7 +232,6 @@ def compare_signal_lists(predicted_ecg_signal_list,
                          plot=False,
                          prominence=0.7,
                          wandb_log=False):
-
     avg_error_count_prediction = 0
     avg_pos_error_prediction = 0
     avg_error_count = 0

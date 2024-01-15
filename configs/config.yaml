@@ -1,6 +1,6 @@
 wandb:
   project_name: "radar-ecg-results"
-  api_key: ""
+  api_key: "48fd3e4aefe699d5db6a9025aa409e684338a4f5"
 
 dirs:
   data_dir: "dataset_processed"
@@ -11,22 +11,22 @@ data:
   signal_length: 2954
   frame_time: 0.01015455
 
-model: LSTM # LSTM, GRU, RNN, MLP, TCN
+model: TCN # LSTM, GRU, RNN, MLP, TCN
 
 models:
   TCN:
     run_name: ""
     input_size: 1 # 1, 130
-    output_size: 1 # 1, 2
+    output_size: 2 # 1, 2
     hidden_size: 200
     num_layers: 11
     kernel_size: 3
 
   LSTM:
     run_name: "_test_1d_regression"
-    input_size: 130
+    input_size: 1
     output_size: 2
-    hidden_size: 200
+    hidden_size: 10
     num_layers: 2
     kernel_size: 0
 
@@ -42,19 +42,19 @@ models:
     run_name: "_test_1d_regression"
     input_size: 130
     output_size: 2
-    hidden_size: 200
+    hidden_size: 10
     num_layers: 2
     kernel_size: 0
 
 preprocessing:
-  multi_dim: True
-  mode: "sawtooth" # "sawtooth", "binary classification"
+  multi_dim: False
+  mode: "binary classification" # "sawtooth", "binary classification"
 
 training:
-  max_epochs: 100
+  max_epochs: 1
   batch_size: 8
   learning_rate: 1e-3
-  dev_mode: True
+  dev_mode: False
 
 inference:
   model_path: ""
@@ -62,10 +62,10 @@ inference:
 testing:
   plot: True
   prominence: 0.7
-  wandb_log: True
+  wandb_log: False
 
 main:
-    mode: "train" # "train", "test", "full", "leave_one_out"
+    mode: "full" # "train", "test", "full", "leave_one_out"
 
 
 
