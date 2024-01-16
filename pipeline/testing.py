@@ -227,12 +227,6 @@ def compare_signal_lists(predicted_ecg_signal_list,
                          plot=False,
                          prominence=0.7,
                          wandb_log=False):
-    avg_error_count_prediction = 0
-    avg_pos_error_prediction = 0
-    avg_error_count = 0
-    avg_pos_error = 0
-    counter = 0
-
     # Check that inference was done correctly
     if len(predicted_ecg_signal_list) != len(processed_radar_signal_list) or len(predicted_ecg_signal_list) != len(
             original_ecg_signal_list):
@@ -240,6 +234,11 @@ def compare_signal_lists(predicted_ecg_signal_list,
         return -1, -1, -1, -1
 
     print(f"Comparing {len(predicted_ecg_signal_list)} signals...")
+
+    error_count_prediction_list = []
+    pos_error_prediction_list = []
+    error_count_list = []
+    pos_error_list = []
 
     for predicted_ecg_signal, processed_radar_signal, original_ecg_signal in zip(predicted_ecg_signal_list,
                                                                                  processed_radar_signal_list,
@@ -250,20 +249,54 @@ def compare_signal_lists(predicted_ecg_signal_list,
                                                                                                plot,
                                                                                                prominence,
                                                                                                wandb_log)
-        avg_error_count_prediction += error_count_prediction
-        avg_pos_error_prediction += pos_error_prediction
-        avg_error_count += error_count
-        avg_pos_error += pos_error
 
-        if error_count_prediction == 0:
-            counter += 1
+        error_count_prediction_list.append(error_count_prediction)
+        pos_error_prediction_list.append(pos_error_prediction)
+        error_count_list.append(error_count)
+        pos_error_list.append(pos_error)
 
-    avg_error_count_prediction /= len(predicted_ecg_signal_list)
-    avg_pos_error_prediction /= len(predicted_ecg_signal_list)
-    avg_error_count /= len(predicted_ecg_signal_list)
-    avg_pos_error /= len(predicted_ecg_signal_list)
+    error_count_predictions = np.array(error_count_prediction_list)
+    pos_error_predictions = np.array(pos_error_prediction_list)
+    error_counts = np.array(error_count_list)
+    pos_errors = np.array(pos_error_list)
 
-    return avg_error_count_prediction, avg_pos_error_prediction, avg_error_count, avg_pos_error
+    avg_error_count_prediction = np.mean(error_count_predictions)
+    avg_pos_error_prediction = np.mean(pos_error_predictions)
+    avg_error_count = np.mean(error_counts)
+    avg_pos_error = np.mean(pos_errors)
+
+    std_error_count_prediction = np.std(error_count_predictions)
+    std_pos_error_prediction = np.std(pos_error_predictions)
+    std_error_count = np.std(error_counts)
+    std_pos_error = np.std(pos_errors)
+
+    max_error_count_prediction = np.max(error_count_predictions)
+    max_pos_error_prediction = np.max(pos_error_predictions)
+    max_error_count = np.max(error_counts)
+    max_pos_error = np.max(pos_errors)
+
+    # How many signals have a peak count error of 0
+    zero_error_count_prediction = len(np.where(error_count_predictions == 0)[0])
+
+    # How many signals have more peaks in the predicted signal than in the ECG signal
+    more_peaks_prediction = len(np.where(error_count_predictions < 0)[0])
+
+    metrics = {"Mean Peak Count Error for Predicted ECG Signals": avg_error_count_prediction,
+               "Mean Absolute Peak Position Error for Predicted ECG Signals[ms]": avg_pos_error_prediction,
+               "Mean Peak Count Error for Processed Radar Signals": avg_error_count,
+               "Mean Absolute Peak Position Error for Processed Radar Signals[ms]": avg_pos_error,
+               "Standard Deviation of Peak Count Error for Predicted ECG Signals": std_error_count_prediction,
+               "Standard Deviation of Absolute Peak Position Error for Predicted ECG Signals[ms]": std_pos_error_prediction,
+               "Standard Deviation of Peak Count Error for Processed Radar Signals": std_error_count,
+               "Standard Deviation of Absolute Peak Position Error for Processed Radar Signals[ms]": std_pos_error,
+               "Zero Peak Count Error Counter for Predicted ECG Signals": zero_error_count_prediction,
+               "More Peaks detected in Predicted ECG Signals": more_peaks_prediction,
+               "Max Peak Count Error for Predicted ECG Signals": max_error_count_prediction,
+               "Max Absolute Peak Position Error for Predicted ECG Signals[ms]": max_pos_error_prediction,
+               "Max Peak Count Error for Processed Radar Signals": max_error_count,
+               "Max Absolute Peak Position Error for Processed Radar Signals[ms]": max_pos_error}
+
+    return metrics
 
 
 def testing(data_dir, plot, prominence, wandb_log=False):
@@ -281,24 +314,22 @@ def testing(data_dir, plot, prominence, wandb_log=False):
         predicted_ecg_signal_list = predicted_ecg_signal_list[:10]
 
     # Compare the signals
-    errors = compare_signal_lists(predicted_ecg_signal_list,
-                                  radar_signal_list,
-                                  ecg_signal_list,
-                                  plot=plot,
-                                  prominence=prominence,
-                                  wandb_log=wandb_log)
+    metrics = compare_signal_lists(predicted_ecg_signal_list,
+                                   radar_signal_list,
+                                   ecg_signal_list,
+                                   plot=plot,
+                                   prominence=prominence,
+                                   wandb_log=wandb_log)
 
     # Print the results
-    print("Average Peak Count Error for Predicted ECG Signals:", round(errors[0], 2))
-    print("Average Absolute Peak Position Error for Predicted ECG Signals[ms]:", round(errors[1], 2))
-    print("Average Peak Count Error for Processed Radar Signals:", round(errors[2], 2))
-    print("Average Absolute Peak Position Error for Processed Radar Signals[ms]:", round(errors[3], 2))
+    print("Metrics:")
+    for key, value in metrics.items():
+        print(f"{key}: {value}")
 
     if wandb_log:
-        wandb.log({"Average Peak Count Error for Predicted ECG Signals": errors[0],
-                   "Average Absolute Peak Position Error for Predicted ECG Signals[ms]": errors[1],
-                   "Average Peak Count Error for Processed Radar Signals": errors[2],
-                   "Average Absolute Peak Position Error for Processed Radar Signals[ms]": errors[3]})
+        wandb.log(metrics)
+
+    return metrics
 
 
 @hydra.main(version_base="1.2", config_path="../configs", config_name="config")
