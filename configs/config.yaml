@@ -7,24 +7,20 @@ dirs:
   unprocessed_data_dir: "dataset"
   save_dir: "outputs"
 
-data:
-  signal_length: 2954
-  frame_time: 0.01015455
-
 model: TCN # LSTM, GRU, RNN, MLP, TCN
 
 models:
   TCN:
-    run_name: ""
+    run_name: "test_1d_regression"
     input_size: 1 # 1, 130
-    output_size: 2 # 1, 2
+    output_size: 1 # 1, 2
     hidden_size: 200
-    num_layers: 11
+    num_layers: 8 # 11 (leads to receptive field of 4095 for 30s slices), 8 (leads to receptive field of 511 for 5s slices)
     kernel_size: 3
 
   LSTM:
     run_name: "_test_1d_regression"
-    input_size: 1
+    input_size: 130
     output_size: 2
     hidden_size: 10
     num_layers: 2
@@ -48,7 +44,8 @@ models:
 
 preprocessing:
   multi_dim: False
-  mode: "binary classification" # "sawtooth", "binary classification"
+  mode: "sawtooth" # "sawtooth", "binary classification"
+  slice_duration: 5 # 5, 30 (seconds)
 
 training:
   max_epochs: 1
@@ -61,8 +58,8 @@ inference:
 
 testing:
   plot: True
-  prominence: 0.7
-  wandb_log: False
+  prominence: 0.2
+  wandb_log: True
 
 main:
     mode: "full" # "train", "test", "full", "leave_one_out"

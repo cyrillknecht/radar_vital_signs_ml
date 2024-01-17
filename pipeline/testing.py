@@ -178,11 +178,10 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, promin
         plt.legend(["Predicted ECG", "Original ECG", "Original Peaks", "Predicted Peaks"])
         plt.title(f"Peak Count Error {round(error_count, 2)}  and "
                   f" Avg. Peak Pos. Error {round(avg_abs_peak_pos_error, 2)}ms")
+
         if wandb_log:
             fig = plt.gcf()
-            wandb.log({"Peak Count Error": error_count,
-                       "Average Absolute Peak Position Error[ms]": avg_abs_peak_pos_error,
-                       "ECG Prediction": fig})
+            wandb.log({"ECG Prediction": fig})
         else:
             plt.show()
 
@@ -300,6 +299,7 @@ def compare_signal_lists(predicted_ecg_signal_list,
 
 
 def testing(data_dir, plot, prominence, wandb_log=False):
+    print("Starting testing...")
     # Load the data from h5 files
     ecg_signal_list = torch.from_numpy(
         h5py.File(os.path.join(data_dir, "ecg_test.h5"), 'r')['dataset'][:].astype(np.float32)).squeeze(1)

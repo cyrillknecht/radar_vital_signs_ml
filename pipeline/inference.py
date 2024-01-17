@@ -25,6 +25,7 @@ def store_data_h5(data, target_dir, filename):
 
 
 def inference(cfg):
+    print("Starting inference...")
     # delete old results file if it exists
     if os.path.exists(os.path.join(cfg.dirs.data_dir, "results.csv")):
         os.remove(os.path.join(cfg.data_dir, "results.csv"))

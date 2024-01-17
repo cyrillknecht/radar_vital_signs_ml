@@ -110,7 +110,7 @@ def read_radar_data_npz(filename, which_shape=1):
     return radar_data, (start_time, config, other)
 
 
-def get_sawtooth_signal(input_signal):
+def get_sawtooth_signal(input_signal, signal_length=2954):
     """
     Generate a sawtooth signal from the input_signal signal.
     Args:
@@ -121,7 +121,7 @@ def get_sawtooth_signal(input_signal):
 
     """
     # downsample the signal
-    resampled_signal = scipy.signal.resample(input_signal, 2954)
+    resampled_signal = scipy.signal.resample(input_signal, signal_length)
 
     # use the existing processing for peaks and filtered resampled input_signal
     _, peaks, filtered, _ = HR_calc_ecg(resampled_signal, mode=1, safety_check=False)
@@ -219,9 +219,9 @@ def preprocess_data(subj_list,
                     slice_duration=30,
                     slice_stride=5,
                     data_dir="dataset"):
+    print("Starting preprocessing...")
     radar_data_storage = []
     ecg_data_storage = []
-
     for subject in subj_list:
         for recording in rec_list:
             ecg_samplingrate = 130
@@ -256,11 +256,13 @@ def preprocess_data(subj_list,
                 radar_data_storage.append(hf_signal)
 
                 # Get ecg input_signal slice
-                ecg_slice = ecg[int(window_start * frame_time) * ecg_samplingrate:int(
-                    window_end * frame_time) * ecg_samplingrate]
+                start_idx = int(window_start * frame_time) * ecg_samplingrate
+                end_idx = int(window_end * frame_time) * ecg_samplingrate
+                ecg_slice = ecg[start_idx:end_idx]
+
                 # process ecg_slice
                 if mode == "sawtooth":
-                    ecg_slice = get_sawtooth_signal(ecg_slice)
+                    ecg_slice = get_sawtooth_signal(ecg_slice, signal_length=window_end - window_start)
                 elif mode == "binary classification":
                     ecg_slice = get_binary_signal(ecg_slice)
 
@@ -279,7 +281,8 @@ def preprocess(target_dir,
                multi_dim=True,
                mode="sawtooth",
                files=None,
-               data_dir="dataset"):
+               data_dir="dataset",
+               slice_duration=30):
 
     # Suppress warnings from scipy
     warnings.filterwarnings("ignore", category=UserWarning, module='scipy.interpolate._fitpack2')
@@ -305,26 +308,30 @@ def preprocess(target_dir,
                                              rec_list=recordings,
                                              multi_dim=multi_dim,
                                              mode=mode,
-                                             data_dir=data_dir)
+                                             data_dir=data_dir,
+                                             slice_duration=slice_duration)
 
     radar_val, ecg_val = preprocess_data(subj_list=val_subjects,
                                          rec_list=recordings,
                                          multi_dim=multi_dim,
                                          mode=mode,
-                                         data_dir=data_dir)
+                                         data_dir=data_dir,
+                                         slice_duration=slice_duration)
 
     radar_test, ecg_test = preprocess_data(subj_list=test_subjects,
                                            rec_list=recordings,
                                            multi_dim=multi_dim,
                                            mode=mode,
-                                           data_dir=data_dir)
+                                           data_dir=data_dir,
+                                           slice_duration=30)
 
     # We always need one-dimensional data for testing
     one_dim_radar_test, _ = preprocess_data(subj_list=test_subjects,
                                             rec_list=recordings,
                                             multi_dim=False,
                                             mode=mode,
-                                            data_dir=data_dir)
+                                            data_dir=data_dir,
+                                            slice_duration=30)
 
     # Store data
     store_data_h5(data=radar_train,
@@ -373,7 +380,8 @@ def preprocessing_hydra(cfg: DictConfig):
                test_subjects=TEST_SUBJECTS,
                multi_dim=cfg.preprocessing.multi_dim,
                mode=cfg.preprocessing.mode,
-               data_dir="../" + cfg.dirs.unprocessed_data_dir)
+               data_dir="../" + cfg.dirs.unprocessed_data_dir,
+               slice_duration=cfg.preprocessing.slice_duration)
 
 
 if __name__ == "__main__":

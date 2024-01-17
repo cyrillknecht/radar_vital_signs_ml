@@ -49,6 +49,7 @@ def get_plot(result, target, frame_time):
 
 
 def training(cfg: DictConfig, left_out_subject: int = None):
+    print("Starting training...")
     # Prepare run name
     model = cfg.model
     name = cfg.model + "_" + cfg.models[model].run_name
@@ -60,7 +61,7 @@ def training(cfg: DictConfig, left_out_subject: int = None):
 
     if not cfg.wandb.api_key and not cfg.training.dev_mode:
         print("No wandb API key provided. Please provide a key in the config file to train.")
-        return
+        raise ValueError
 
     logger = None
     if not cfg.training.dev_mode:  # If not in dev mode or, use wandb logger and save checkpoints
