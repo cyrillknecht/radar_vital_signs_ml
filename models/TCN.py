@@ -61,12 +61,17 @@ class TemporalBlock(nn.Module):
 
 
 class TemporalConvNet(nn.Module):
-    def __init__(self, num_inputs, num_channels, kernel_size=2, dropout=0.2):
+    def __init__(self, num_inputs, num_channels, kernel_size=2, dropout=0.2, no_dilation_layers=3):
         super(TemporalConvNet, self).__init__()
         layers = []
         num_levels = len(num_channels)
+
         for i in range(num_levels):
-            dilation_size = 2 ** i
+            if i < no_dilation_layers:
+                dilation_size = 1
+            else:
+                dilation_size = 2 ** (i-no_dilation_layers)
+
             in_channels = num_inputs if i == 0 else num_channels[i - 1]
             out_channels = num_channels[i]
             layers += [TemporalBlock(n_inputs=in_channels,
@@ -84,12 +89,13 @@ class TemporalConvNet(nn.Module):
 
 
 class TCN(nn.Module):
-    def __init__(self, channel_sizes, input_size=1, output_size=1, kernel_size=3, dropout=0.2):
+    def __init__(self, channel_sizes, input_size=1, output_size=1, kernel_size=3, dropout=0.2, no_dilation_layers=3):
         super(TCN, self).__init__()
         self.tcn = TemporalConvNet(num_inputs=input_size,
                                    num_channels=channel_sizes,
                                    kernel_size=kernel_size,
-                                   dropout=dropout)
+                                   dropout=dropout,
+                                   no_dilation_layers=no_dilation_layers)
         self.linear = nn.Linear(in_features=channel_sizes[-1],
                                 out_features=output_size)
 

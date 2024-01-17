@@ -219,7 +219,7 @@ def preprocess_data(subj_list,
                     slice_duration=30,
                     slice_stride=5,
                     data_dir="dataset"):
-    print("Starting preprocessing...")
+
     radar_data_storage = []
     ecg_data_storage = []
     for subject in subj_list:
@@ -283,6 +283,7 @@ def preprocess(target_dir,
                files=None,
                data_dir="dataset",
                slice_duration=30):
+    print("Starting preprocessing...")
 
     # Suppress warnings from scipy
     warnings.filterwarnings("ignore", category=UserWarning, module='scipy.interpolate._fitpack2')

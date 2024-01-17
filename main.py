@@ -26,13 +26,21 @@ def run_training_pipeline(cfg,
 
     if train_subjects is None:
         train_subjects = [x for x in range(25) if x != 0 and x != 1]
-        print("No train subjects provided. Using default values: ", train_subjects)
+        print("No train subjects provided. Using default values.")
+
+    print("Train subjects: ", train_subjects)
+
     if val_subjects is None:
         val_subjects = [0]
-        print("No val subjects provided. Using default values: ", val_subjects)
+        print("No val subjects provided. Using default values.")
+
+    print("Val subjects: ", val_subjects)
+
     if test_subjects is None:
         test_subjects = [1]
-        print("No test subjects provided. Using default values: ", test_subjects)
+        print("No test subjects provided. Using default values: ")
+
+    print("Test subjects: ", test_subjects)
 
     preprocess(target_dir=cfg.dirs.data_dir,
                train_subjects=train_subjects,
@@ -95,11 +103,12 @@ def leave_one_out_training(cfg):
                                left_out_subject=i)
         results.append(result)
 
-    # Average the results list of dicts into one dict
+    # Average the result list of dicts into one dict
     avg_results = {}
     for key in results[0].keys():
-        avg_results[key] = sum(d[key] for d in results) / len(results)
+        avg_results["Total" + key] = sum(d[key] for d in results) / len(results)
     print(avg_results)
+    wandb.log(avg_results)
 
     return avg_results
 

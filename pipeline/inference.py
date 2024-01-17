@@ -47,7 +47,8 @@ def inference(cfg):
                       output_size=cfg.models[model_type].output_size,
                       hidden_size=cfg.models[model_type].hidden_size,
                       num_layers=cfg.models[model_type].num_layers,
-                      kernel_size=cfg.models[model_type].kernel_size)
+                      kernel_size=cfg.models[model_type].kernel_size,
+                      no_dilation_layers=cfg.models[model_type].no_dilation_layers)
 
     litModel = LitModel(model=model, learning_rate=cfg.training.learning_rate)
 

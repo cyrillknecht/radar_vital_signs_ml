@@ -84,7 +84,8 @@ def training(cfg: DictConfig, left_out_subject: int = None):
                       output_size=cfg.models[model].output_size,
                       hidden_size=cfg.models[model].hidden_size,
                       num_layers=cfg.models[model].num_layers,
-                      kernel_size=cfg.models[model].kernel_size)
+                      kernel_size=cfg.models[model].kernel_size,
+                      no_dilation_layers=cfg.models[model].no_dilation_layers)
 
     litModel = LitModel(model=model,
                         learning_rate=cfg.training.learning_rate)

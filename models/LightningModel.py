@@ -62,7 +62,7 @@ class LitModel(pl.LightningModule):
         self._device = value
 
 
-def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2, kernel_size=3, signal_length=2954):
+def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2, kernel_size=3, no_dilation_layers=3):
     """
     Get the model for the given type.
 
@@ -87,7 +87,8 @@ def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2
                    input_size=input_size,
                    output_size=output_size,
                    kernel_size=kernel_size,
-                   dropout=0.2
+                   dropout=0.2,
+                   no_dilation_layers=no_dilation_layers
                    )
     elif model_type == "LSTM":
         return LSTM(input_features=input_size,
