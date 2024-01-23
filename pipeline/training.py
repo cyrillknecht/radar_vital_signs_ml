@@ -19,6 +19,18 @@ from pipeline.dataloader import get_data_loaders
 
 
 def get_plot(result, target, frame_time):
+    """
+    Plots the result and target of a prediction.
+
+    Args:
+        result(torch.Tensor): The result of the prediction.
+        target(torch.Tensor): The target of the prediction.
+        frame_time(float): The time between two frames in seconds.
+
+    Returns:
+        fig: The figure of the plot.
+
+    """
     if len(target.shape) == 1:
         print("Debug: had to unsqueeze target")
         target = torch.unsqueeze(target, 0)
@@ -49,6 +61,21 @@ def get_plot(result, target, frame_time):
 
 
 def training(cfg: DictConfig, left_out_subject: int = None):
+    """
+    Main training function.
+    Loads the data, the model and trains it.
+
+    Args:
+        cfg(DictConfig): The configuration file.
+        left_out_subject(int): The subject to leave out for validation.
+        If None, no subject is left out.
+
+    Returns:
+        name(str): The name of the run.
+        Useful to load the model for inference from checkpoint.
+
+    """
+
     print("Starting training...")
     # Prepare run name
     model = cfg.model
@@ -126,6 +153,14 @@ def training(cfg: DictConfig, left_out_subject: int = None):
 
 @hydra.main(version_base="1.2", config_path="../configs", config_name="config")
 def training_hydra(cfg: DictConfig):
+    """
+    Hydra wrapper for training.
+
+    Args:
+        cfg(DictConfig): The configuration file.
+
+    """
+
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
 
     training(cfg, left_out_subject=None)

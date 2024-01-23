@@ -17,6 +17,16 @@ import h5py
 
 
 def store_data_h5(data, target_dir, filename):
+    """
+    Stores the given data in an HDF5 file.
+
+    Args:
+        data(np.array): Data to store
+        target_dir(str): Directory to store the file in
+        filename(str): Name of the file to store the data in
+
+    """
+
     os.makedirs(target_dir, exist_ok=True)
     file_path = os.path.join(target_dir, filename + '.h5')
 
@@ -25,6 +35,16 @@ def store_data_h5(data, target_dir, filename):
 
 
 def inference(cfg):
+    """
+    Runs inference on a previously trained model.
+    Args:
+        cfg(DictConfig): Hydra config object containing all necessary parameters
+
+    Returns:
+        np.array: Array containing all the predicted signals for the test set
+
+    """
+
     print("Starting inference...")
     # delete old results file if it exists
     if os.path.exists(os.path.join(cfg.dirs.data_dir, "results.csv")):
@@ -78,9 +98,18 @@ def inference(cfg):
 
     print("Inference done.")
 
+    return result_signal_list
+
 
 @hydra.main(version_base="1.2", config_path="../configs", config_name="config")
 def inference_hydra(cfg: DictConfig):
+    """
+    Hydra wrapper for running the inference function as a script.
+    Args:
+        cfg(DictConfig): Hydra config object containing all necessary parameters
+
+    """
+
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
     inference(cfg)
 
