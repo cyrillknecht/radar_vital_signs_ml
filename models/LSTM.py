@@ -9,10 +9,10 @@ class LSTM(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        x = x.reshape(x.shape[0], x.shape[2], x.shape[1])
+        x = x.transpose(2, 1)
         x, _ = self.rnn(x)
         x = self.fc(x)
-        x = x.reshape(x.shape[0], x.shape[2], x.shape[1])
+        x = x.transpose(2, 1)
         x = self.sigmoid(x)
 
         return x
