@@ -134,7 +134,7 @@ def training(cfg: DictConfig, left_out_subject: int = None):
                          deterministic=True,
                          fast_dev_run=cfg.training.dev_mode,
                          default_root_dir=cfg.dirs.save_dir,
-                         callbacks=[EarlyStopping(monitor='val_loss', patience=5),
+                         callbacks=[EarlyStopping(monitor='val_loss', patience=cfg.training.early_stopping_patience),
                                     checkpoint_callback]
                          )
 

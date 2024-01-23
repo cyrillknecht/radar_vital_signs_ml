@@ -49,12 +49,15 @@ preprocessing:
   # remember to also change input_size in model config
   mode: "sawtooth" # "sawtooth", "binary classification"
   slice_duration: 30 # adapt the receptive field of TCN to this value using num_layers or no_dilation_layers
+  apply_peak_envelopes: True
+  use_magnitude: True # Only applies to multi_dim mode. Change input_size in model config to 65 if True, 130 if False
 
 training:
   max_epochs: 1
   batch_size: 8
   learning_rate: 1e-3
-  dev_mode: True # if True, just trains on 1 batch and does not save anything, only for debugging training
+  dev_mode: False # if True, just trains on 1 batch and does not save anything, only for debugging training
+  early_stopping_patience: 5
   loss_component_weights: {mse: 1.0, cross_entropy: 1.0}
 
 inference:
@@ -72,7 +75,7 @@ main:
     # full: runs train and test combined.make sure no model_path is set and that there exists no model with the same name as
     # the one specified in the config
     # leave_one_out: runs full mode for each patient, leaving out one patient each time as a test set
-    preprocess: True # if True, preprocesses the data, otherwise loads existing preprocessed data
+    preprocess_data: True # if True, preprocesses the data, otherwise loads existing preprocessed data
 
 
 
