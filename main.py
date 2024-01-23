@@ -1,6 +1,7 @@
 """
 Run this to do a complete preprocessing, training, and inference run.
 """
+
 import wandb
 import hydra
 
@@ -18,7 +19,19 @@ def run_training_pipeline(cfg,
                           test_subjects=None,
                           left_out_subject=None):
     """
-    Run the complete pipeline.
+    Run preprocessing and training.
+
+    Args:
+        cfg(DictConfig): The config object.
+        train_subjects(list): The subjects to use for training.
+        val_subjects(list): The subjects to use for validation.
+        test_subjects(list): The subjects to use for testing.
+        left_out_subject(int): The subject to leave out of the training set.
+
+    Returns:
+        run_name(str): The name of the run.
+        Useful to load the model for inference from checkpoint.
+
     """
 
     if not train_subjects or not val_subjects or not test_subjects:
@@ -57,8 +70,24 @@ def run_training_pipeline(cfg,
 
 
 def run_test_pipeline(cfg, model_path=None):
+    """
+    Run inference and testing.
+    If model_path is provided, use that model for inference.
+    Otherwise, use the model
+    specified in the config file.
+
+    Args:
+        cfg(DictConfig): The config object.
+        model_path(str): The path to the model checkpoint to use for inference.
+        If None, use the model specified in the
+
+    Returns:
+        results(dict): The results of the test run.
+
+    """
+
     if model_path:
-        cfg.inference.model_path = "outputs/" + model_path + ".ckpt"
+        cfg.inference.model_path = cfg.dirs.save_dir + "/" + model_path + ".ckpt"
     if cfg.testing.wandb_log:
         wandb.login(key=cfg.wandb.api_key)
         wandb.init(project=cfg.wandb.project_name, name=model_path)
@@ -76,6 +105,21 @@ def full_pipeline(cfg,
                   val_subjects=None,
                   test_subjects=None,
                   left_out_subject=None):
+    """
+    Run the complete pipeline (preprocessing, training, inference, testing).
+    Make sure no checkpoint with the same name already exists in the outputs folder.
+
+    Args:
+        cfg(DictConfig): The config object.
+        train_subjects(list): The subjects to use for training.
+        val_subjects(list): The subjects to use for validation.
+        test_subjects(list): The subjects to use for testing.
+        left_out_subject(int): The subject to leave out of the training set.
+
+    Returns:
+        results(dict): The results of the test run.
+
+    """
     run_name = run_training_pipeline(cfg=cfg,
                                      train_subjects=train_subjects,
                                      val_subjects=val_subjects,
@@ -88,8 +132,16 @@ def full_pipeline(cfg,
 
 def leave_one_out_training(cfg):
     """
-    Run the complete pipeline for all subjects.
+    Run the complete pipeline with all subjects as test subjects once.
+
+    Args:
+        cfg(DictConfig): The config object.
+
+    Returns:
+        avg_results(dict): The average results of the test runs.
+
     """
+
     results = []
     for i in range(1, 24):
         train_subjects = [x for x in range(1, 25) if x != i]
@@ -115,6 +167,13 @@ def leave_one_out_training(cfg):
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config")
 def main(cfg: DictConfig):
+    """
+    Main function of the repository.
+    Run this to do a run specified in the config file.
+    Args:
+        cfg(DictConfig): The config object.
+
+    """
     seed_everything(42, workers=True)
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
 
