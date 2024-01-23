@@ -4,7 +4,7 @@ import torch.nn as nn
 class LSTM(nn.Module):
     def __init__(self, input_features=1, output_features=1, hidden_size=512, num_layers=1, dropout=0.2):
         super(LSTM, self).__init__()
-        self.rnn = nn.LSTM(input_features, hidden_size, num_layers, dropout=dropout)
+        self.rnn = nn.LSTM(input_features, hidden_size, num_layers, dropout=dropout, batch_first=True)
         self.fc = nn.Linear(hidden_size, output_features)
         self.sigmoid = nn.Sigmoid()
 
