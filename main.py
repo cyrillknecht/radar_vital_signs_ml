@@ -55,14 +55,15 @@ def run_training_pipeline(cfg,
 
     print("Test subjects: ", test_subjects)
 
-    preprocess(target_dir=cfg.dirs.data_dir,
-               train_subjects=train_subjects,
-               val_subjects=val_subjects,
-               test_subjects=test_subjects,
-               multi_dim=cfg.preprocessing.multi_dim,
-               mode=cfg.preprocessing.mode,
-               data_dir=cfg.dirs.unprocessed_data_dir,
-               slice_duration=cfg.preprocessing.slice_duration)
+    if cfg.main.preprocess_data:
+        preprocess(target_dir=cfg.dirs.data_dir,
+                   train_subjects=train_subjects,
+                   val_subjects=val_subjects,
+                   test_subjects=test_subjects,
+                   multi_dim=cfg.preprocessing.multi_dim,
+                   mode=cfg.preprocessing.mode,
+                   data_dir=cfg.dirs.unprocessed_data_dir,
+                   slice_duration=cfg.preprocessing.slice_duration)
 
     run_name = training(cfg, left_out_subject=left_out_subject)
 
@@ -124,7 +125,8 @@ def full_pipeline(cfg,
                                      train_subjects=train_subjects,
                                      val_subjects=val_subjects,
                                      test_subjects=test_subjects,
-                                     left_out_subject=left_out_subject)
+                                     left_out_subject=left_out_subject
+                                     )
     results = run_test_pipeline(cfg, run_name)
 
     return results

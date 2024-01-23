@@ -10,7 +10,7 @@ from models.TCN import TCN
 from models.LSTM import LSTM
 from models.GRU import GRU
 from models.RNN import RNN
-from models.MLP import MLP
+from models.Losses import get_loss
 
 
 class LitModel(pl.LightningModule):
@@ -26,18 +26,21 @@ class LitModel(pl.LightningModule):
 
         return self._device
 
-    def __init__(self, model, learning_rate=1e-3):
+    def __init__(self, model, learning_rate=1e-3, loss_component_weights=None):
         """
         Initiate the Lightning model.
         Args:
             model(torch.nn.Module): model to use
             learning_rate(float): learning rate for the optimizer
+            loss_component_weights(dict): weights for the different components of the loss function
 
         """
         super().__init__()
         self.model = model
         self.learning_rate = learning_rate
-        self.device = torch.device(object="cuda:0" if torch.cuda.is_available() else "cpu")
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.device = torch.device(device)
+        self.loss_component_weights = loss_component_weights
 
     def forward(self, x):
         """
@@ -120,11 +123,11 @@ class LitModel(pl.LightningModule):
         """
         radar_signal, ecg_signal = batch
         output = self.model(radar_signal)
-        if output.shape[1] == 1:
-            loss = nn.MSELoss(reduction='mean')(output, ecg_signal)
-        else:
-            loss = (nn.CrossEntropyLoss(reduction='mean', weight=torch.tensor([1, 80], device=self.device))
-                    (output, ecg_signal))
+
+        loss = get_loss(y_true=ecg_signal,
+                        y_pred=output,
+                        device=self.device,
+                        component_weights=self.loss_component_weights)
 
         return loss
 
@@ -182,123 +185,7 @@ def get_model(model_type, input_size, output_size, hidden_size=256, num_layers=2
                    num_layers=num_layers,
                    output_features=output_size)
 
-    elif model_type == "MLP":
-        return MLP(input_size=input_size,
-                   hidden_size=hidden_size,
-                   num_layers=num_layers,
-                   output_size=output_size)
-
     else:
         print("Model type not recognized or not yet implemented.")
         exit(1)
 
-
-def peak_position_count_loss(y_true, y_pred, peak_accuracy_weight=0.5, peak_count_weight=0.5, device='cpu'):
-    """
-    Custom batched loss function for accurate peak position and count in peak detection.
-
-    Args:
-    - y_true (Tensor): The true labels (shape [batch_size, 2, sequence_length]).
-    - y_pred (Tensor): The predicted logits (shape [batch_size, 2, sequence_length]).
-    - peak_accuracy_weight (float): Weighting factor for the peak position accuracy component.
-    - peak_count_weight (float): Weighting factor for the peak count accuracy component.
-
-    Returns:
-    - Tensor: The computed loss value for the batch.
-    """
-    batch_size = y_true.shape[0]
-
-    # Binary Cross-Entropy Loss for classification accuracy
-    bce_loss = (nn.CrossEntropyLoss(reduction='mean', weight=torch.tensor([1, 80], device=device))(y_pred, y_true))
-
-    # Initialize components for peak position and count accuracy
-    position_diff_total = 0.0
-    count_diff_total = 0.0
-    confidence_total = 0.0
-
-    for i in range(batch_size):
-        peaks_pred = y_pred[i, 0, :] - y_pred[i, 1, :]  # if peak, positive; if not peak, negative
-
-        only_peaks = nn.ReLU()(peaks_pred)
-        soft_peaks = torch.sigmoid((only_peaks * 1000))  # scale up the peaks to 1
-        pred_peak_count = soft_peaks.sum()
-
-        num_peaks_true = torch.sum(y_true[i, 0, :])
-        count_diff = torch.abs(num_peaks_true - pred_peak_count)
-
-        # Confidence measure
-        confidence = 1 / (count_diff + 1)  # Range:[0, 1/2]
-
-        sequence_length = y_true.shape[2]
-
-        # Generate a positional index tensor
-        position_indices = torch.arange(sequence_length, device=device)
-
-        # Weighted sum of positions
-        true_weighted_positions = (y_true * position_indices).sum()
-        pred_weighted_positions = (soft_peaks * position_indices).sum()
-
-        # Calculate the difference
-        position_diff = torch.abs(true_weighted_positions - pred_weighted_positions)
-
-        # Aggregate the components across the batch
-        position_diff_total += position_diff
-        count_diff_total += count_diff
-        confidence_total += confidence
-
-    # Averaging the components across the batch
-    position_diff_avg = position_diff_total / batch_size
-    count_diff_avg = count_diff_total / batch_size
-    confidence_avg = confidence_total / batch_size
-    print("Position Difference: ", position_diff_avg)
-    print("Count Difference: ", count_diff_avg)
-    print("BCE Loss: ", bce_loss)
-    print("Confidence: ", confidence_avg)
-
-    # Combining all components
-    count_weight = torch.abs(confidence_avg - 1) * peak_count_weight
-    position_weight = confidence_avg * peak_accuracy_weight
-
-    combined_loss = (bce_loss +
-                     count_weight * count_diff_avg +
-                     position_weight * position_diff_avg)
-
-    return combined_loss
-
-
-def soft_peak_detection_loss(y_true, y_pred, alpha=0.5, soft_threshold=0.5):
-    """
-    Custom batched loss function with a differentiable approach to peak detection.
-
-    Args:
-    - y_true (Tensor): The true values (shape [batch_size, 1, sequence_length]).
-    - y_pred (Tensor): The predicted values (shape [batch_size, 1, sequence_length]).
-    - alpha (float): Weighting factor for the soft peak detection component of the loss.
-    - soft_threshold (float): Soft threshold for detecting peaks.
-
-    Returns:
-    - Tensor: The computed loss value for the batch.
-    """
-
-    y_true = y_true.squeeze(1)
-    y_pred = y_pred.squeeze(1)
-
-    # Mean Squared Error (MSE) Component
-    mse_loss = nn.MSELoss()(y_true, y_pred)
-
-    # Soft Peak Detection Component
-    # Apply a sigmoid function to soften the thresholding
-    y_true_diff = y_true[:, 5:] - y_true[:, :-5]
-    y_true_diff_relu = nn.ReLU()(y_true_diff)
-    soft_peaks_true = torch.sigmoid((y_true_diff_relu - soft_threshold)*1000)
-
-    y_pred_diff = y_pred[:, 5:] - y_pred[:, :-5]
-    y_pred_diff_relu = nn.ReLU()(y_pred_diff)
-    soft_peaks_pred = torch.sigmoid((y_pred_diff_relu - soft_threshold)*1000)
-
-    peak_loss = nn.L1Loss()(soft_peaks_pred, soft_peaks_true, reduction='mean')
-
-    # Combining the MSE and soft peak detection losses
-    combined_loss = (1 - alpha) * mse_loss + alpha * peak_loss
-
-    return combined_loss

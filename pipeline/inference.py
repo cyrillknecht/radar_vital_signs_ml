@@ -70,7 +70,9 @@ def inference(cfg):
                       kernel_size=cfg.models[model_type].kernel_size,
                       no_dilation_layers=cfg.models[model_type].no_dilation_layers)
 
-    litModel = LitModel(model=model, learning_rate=cfg.training.learning_rate)
+    litModel = LitModel(model=model,
+                        learning_rate=cfg.training.learning_rate,
+                        loss_component_weights=cfg.training.loss_component_weights)
 
     litModel.model.load_state_dict(new_state_dict)
 

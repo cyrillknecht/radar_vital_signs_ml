@@ -115,7 +115,8 @@ def training(cfg: DictConfig, left_out_subject: int = None):
                       no_dilation_layers=cfg.models[model].no_dilation_layers)
 
     litModel = LitModel(model=model,
-                        learning_rate=cfg.training.learning_rate)
+                        learning_rate=cfg.training.learning_rate,
+                        loss_component_weights=cfg.training.loss_component_weights)
     print("New model loaded.")
 
     # Create the ModelCheckpoint callback

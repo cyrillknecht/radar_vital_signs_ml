@@ -54,7 +54,8 @@ training:
   max_epochs: 1
   batch_size: 8
   learning_rate: 1e-3
-  dev_mode: False # if True, just trains on 1 batch and does not save anything, only for debugging training
+  dev_mode: True # if True, just trains on 1 batch and does not save anything, only for debugging training
+  loss_component_weights: {mse: 1.0, cross_entropy: 1.0}
 
 inference:
   model_path: ""
@@ -71,6 +72,7 @@ main:
     # full: runs train and test combined.make sure no model_path is set and that there exists no model with the same name as
     # the one specified in the config
     # leave_one_out: runs full mode for each patient, leaving out one patient each time as a test set
+    preprocess: True # if True, preprocesses the data, otherwise loads existing preprocessed data
 
 
 
