@@ -6,6 +6,7 @@ Peak Count Error,
 Average Absolute Peak Position Error
 
 """
+import time
 import hydra
 import numpy as np
 import wandb
@@ -39,12 +40,12 @@ def peak_detection(signal, prominence=0.7):
     Find peaks in the given ECG and radar signals.
 
     Args:
-        signal: ECG or radar signal
-        prominence: prominence for peak detection
-        plot: whether to plot the signals
+        signal(np.array): ECG or radar signal (classification or regression
+        prominence(float): prominence parameter for peak detection
+        plot(bool): whether to plot the signals
 
     Returns:
-        peak idxs for ECG and radar signals
+        peaks(np.array): array of peak indices of the given signal
 
     """
 
@@ -83,11 +84,11 @@ def peak_count_error(ecg_peaks, radar_peaks):
     Calculate the peak count error between the given ECG and radar signals.
 
     Args:
-        ecg_peaks: peak idxs for the ECG signal
-        radar_peaks: peak idxs for the radar signal
+        ecg_peaks(np.array): peak idxs for the ECG signal
+        radar_peaks(np.array): peak idxs for the radar signal
 
     Returns:
-        peak count error
+        int: peak count difference between the given ECG and radar signals
 
     """
 
@@ -106,11 +107,11 @@ def average_absolute_peak_position_error(ecg_peaks, radar_peaks):
     Only takes predicted peaks into account. Missing peaks are ignored.
 
     Args:
-        ecg_peaks: peak idxs for the ECG signal
-        radar_peaks: peak idxs for the radar signal
+        ecg_peaks(np.array): peak idxs for the ECG signal
+        radar_peaks(np.array): peak idxs for the radar signal
 
     Returns:
-        average absolute peak position error
+        float: average absolute peak position error between the given ECG and radar signals
 
     """
 
@@ -140,21 +141,28 @@ def average_absolute_peak_position_error(ecg_peaks, radar_peaks):
     return average_positional_error
 
 
-def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, prominence=0.7, wandb_log=False):
+def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, prominence=0.7, wandb_log=False, signal_time=30):
     """
     Analyze the results of the model.
 
     Args:
-        predicted_ecg_signal: predicted ECG signal
-        original_ecg_signal: original ECG signal
-        plot: whether to plot the signals
-        prominence:
+        predicted_ecg_signal(np.array): predicted ECG signal
+        original_ecg_signal(np.array): original ECG signal
+        plot(bool): whether to plot the signals
+        prominence(float): prominence parameter for peak detection
+        wandb_log(bool): whether to log the plots to wandb
+        signal_time(int): length of the signal in seconds
+
+    Returns:
+        error_count(int): peak count error for the predicted ECG signal
+        avg_abs_peak_pos_error(float): average absolute peak position error for the predicted ECG signal
 
     """
+
     if len(original_ecg_signal.shape) == 2:  # If classification
         original_ecg_signal = original_ecg_signal.argmax(axis=0)
 
-    hr, ecg_peaks, filtered, ecg_info = HR_calc_ecg(original_ecg_signal, mode=1, safety_check=False)
+    _, ecg_peaks, _, _ = HR_calc_ecg(original_ecg_signal, mode=1, safety_check=False)
     predicted_ecg_peaks = peak_detection(predicted_ecg_signal, prominence)
     print("ecg_peaks:", len(ecg_peaks))
     print("predicted_ecg_peaks:", len(predicted_ecg_peaks))
@@ -165,12 +173,13 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, promin
     avg_abs_peak_pos_error = average_absolute_peak_position_error(ecg_peaks, predicted_ecg_peaks)
 
     # convert to milliseconds
-    avg_abs_peak_pos_error *= 30 * 1000 / len(original_ecg_signal)
+    avg_abs_peak_pos_error *= signal_time * 1000 / len(original_ecg_signal)
 
     if plot:
         if len(predicted_ecg_signal.shape) == 2:  # If classification
             predicted_ecg_signal = predicted_ecg_signal.argmax(axis=0)
 
+        plt.figure(figsize=(18, 6))
         plt.plot(predicted_ecg_signal)
         plt.plot(original_ecg_signal)
         plt.plot(ecg_peaks, original_ecg_signal[ecg_peaks], "x")
@@ -178,11 +187,14 @@ def analyze_signal(predicted_ecg_signal, original_ecg_signal, plot=False, promin
         plt.legend(["Predicted ECG", "Original ECG", "Original Peaks", "Predicted Peaks"])
         plt.title(f"Peak Count Error {round(error_count, 2)}  and "
                   f" Avg. Peak Pos. Error {round(avg_abs_peak_pos_error, 2)}ms")
-
+        fig = plt.gcf()
         if wandb_log:
-            fig = plt.gcf()
             wandb.log({"ECG Prediction": fig})
+
         else:
+            if not os.path.exists("plots"):
+                os.makedirs("plots")
+            fig.savefig(f"plots/ecg_prediction_{time.time()}.png", dpi=300)
             plt.show()
 
     return error_count, avg_abs_peak_pos_error
@@ -198,11 +210,12 @@ def compare_signals(predicted_ecg_signal,
     Compare the original and predicted signal.
 
     Args:
-        prominence:
-        predicted_ecg_signal: predicted ECG signal
-        processed_radar_signal: processed radar signal
-        original_ecg_signal: original ECG signal
-        plot: whether to plot the signals
+        predicted_ecg_signal(np.array): predicted ECG signal
+        processed_radar_signal(np.array): processed radar signal
+        original_ecg_signal(np.array): original ECG signal
+        plot(bool): whether to plot the signal
+        prominence(float): prominence parameter for peak detection
+        wandb_log(bool): whether to log the plots to wandb
 
     Returns:
         peak count error for the predicted ECG signal
@@ -226,6 +239,22 @@ def compare_signal_lists(predicted_ecg_signal_list,
                          plot=False,
                          prominence=0.7,
                          wandb_log=False):
+    """
+    Compare the original and predicted signals in the given lists.
+
+    Args:
+        predicted_ecg_signal_list(np.array): list of predicted ECG signals
+        processed_radar_signal_list(np.array): list of processed radar signals
+        original_ecg_signal_list(np.array): list of original ECG signals
+        plot(bool): whether to plot the signal
+        prominence(float): prominence parameter for peak detection
+        wandb_log(bool): whether to log the plots to wandb
+
+    Returns:
+        dict: results of the comparison
+
+    """
+
     # Check that inference was done correctly
     if len(predicted_ecg_signal_list) != len(processed_radar_signal_list) or len(predicted_ecg_signal_list) != len(
             original_ecg_signal_list):
@@ -299,6 +328,19 @@ def compare_signal_lists(predicted_ecg_signal_list,
 
 
 def testing(data_dir, plot, prominence, wandb_log=False):
+    """
+    Test the model on the test set.
+
+    Args:
+        data_dir(str): path to the data directory
+        plot(bool): whether to plot the signals
+        prominence(float): prominence parameter for peak detection
+        wandb_log(bool): whether to log the plots to wandb
+
+    Returns:
+        dict: results of the comparison
+
+    """
     print("Starting testing...")
     # Load the data from h5 files
     ecg_signal_list = torch.from_numpy(
@@ -334,6 +376,13 @@ def testing(data_dir, plot, prominence, wandb_log=False):
 
 @hydra.main(version_base="1.2", config_path="../configs", config_name="config")
 def testing_hydra(cfg: DictConfig):
+    """
+    Hydra wrapper for testing.
+    Args:
+        cfg(DictConfig): Hydra config
+
+    """
+
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
     if cfg.testing.wandb_log:
         wandb.login(key=cfg.wandb.api_key)
