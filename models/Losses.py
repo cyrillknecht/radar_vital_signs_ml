@@ -127,7 +127,7 @@ def cross_entropy_loss(y_true, y_pred, device='cpu', weight=80):
 
     """
 
-    return nn.CrossEntropyLoss(weight=torch.tensor([1, weight]))(y_pred, y_true)
+    return nn.CrossEntropyLoss(weight=torch.tensor([1, weight], device=device))(y_pred, y_true)
 
 
 def peak_position_count_loss(y_true, y_pred, peak_accuracy_weight=0.5, peak_count_weight=0.5, device='cpu'):
@@ -254,9 +254,9 @@ def get_combined_classification_loss(y_true, y_pred, device='cpu', component_wei
     loss = torch.tensor(0.0, device=device)
 
     if 'cross_entropy' in component_weights:
-        loss += component_weights['cross_entropy'] * cross_entropy_loss(y_true, y_pred)
+        loss += component_weights['cross_entropy'] * cross_entropy_loss(y_true, y_pred, device=device)
     if 'peak_position_count' in component_weights:
-        loss += component_weights['peak_position_count'] * peak_position_count_loss(y_true, y_pred)
+        loss += component_weights['peak_position_count'] * peak_position_count_loss(y_true, y_pred, device=device)
 
     return loss
 
