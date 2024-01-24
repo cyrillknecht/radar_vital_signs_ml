@@ -38,7 +38,7 @@ def process_phase_signal(signal, frame_time, apply_peak_envelopes=True):
     """
     hf_signal = butt_filt(signal, 10, 22, 1 / frame_time)
     if apply_peak_envelopes:
-        hf_signal = peak_envelopes(signal)
+        hf_signal = peak_envelopes(hf_signal)
     if np.max(hf_signal) - np.min(hf_signal) == 0:
         hf_signal = np.zeros_like(hf_signal)
     else:
@@ -289,9 +289,9 @@ def preprocess_data(subj_list,
         rec_list(list): list of recordings to preprocess
         multi_dim(bool): whether to generate a one-dimensional or a multi-dimensional signal.
         mode(str): whether to generate a sawtooth or a binary classification signal [sawtooth, binary classification]
-        slice_start_time(int): start time of the first slice
-        slice_duration(int): duration of the slices
-        slice_stride(int): stride of the slices
+        slice_start_time(int): start time of the first slice in s
+        slice_duration(int): duration of the slices in s
+        slice_stride(int): stride of the slices in s
         data_dir(str): directory of the data
         apply_peak_envelopes(bool): whether to apply peak envelopes to the signal
         use_magnitude(bool): whether to use the magnitude of the range ffts as additional input
