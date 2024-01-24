@@ -98,10 +98,11 @@ def phase_extraction(current_range_ffts,
         # Normal phase extraction
         # phase = np.unwrap(np.angle(current_range_ffts[:, i, -1]))
 
-        hf_signal_multi = process_phase_signal(phase, frame_time,apply_peak_envelopes=apply_peak_envelopes)
+        hf_signal_multi = process_phase_signal(phase, frame_time,
+                                               apply_peak_envelopes=apply_peak_envelopes,
+                                               apply_butterworth=apply_butterworth)
         multidim_hf_signal.append(hf_signal_multi)
         if use_magnitude:
-            print("Using magnitude")
             multidim_hf_signal.append(magnitude)
 
     return np.array(multidim_hf_signal)
@@ -542,6 +543,3 @@ def preprocessing_hydra(cfg: DictConfig):
 
 if __name__ == "__main__":
     preprocessing_hydra()
-
-
-
