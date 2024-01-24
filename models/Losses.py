@@ -249,7 +249,7 @@ def get_combined_classification_loss(y_true, y_pred, device='cpu', component_wei
 
     """
     if component_weights is None:
-        component_weights = {'peak_position_count': 1.0}
+        component_weights = {'cross_entropy': 1.0}
 
     loss = torch.tensor(0.0, device=device)
 
