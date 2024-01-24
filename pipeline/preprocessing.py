@@ -47,7 +47,12 @@ def process_phase_signal(signal, frame_time, apply_peak_envelopes=True):
     return hf_signal
 
 
-def phase_extraction(current_range_ffts, index, frame_time, multiDim=False, apply_peak_envelopes=True, use_magnitude=True):
+def phase_extraction(current_range_ffts,
+                     index,
+                     frame_time,
+                     multiDim=False,
+                     apply_peak_envelopes=True,
+                     use_magnitude=True):
     """
     Extract the phase from the range fft and process further
     Args:
@@ -88,6 +93,7 @@ def phase_extraction(current_range_ffts, index, frame_time, multiDim=False, appl
         hf_signal_multi = process_phase_signal(phase, frame_time,apply_peak_envelopes=apply_peak_envelopes)
         multidim_hf_signal.append(hf_signal_multi)
         if use_magnitude:
+            print("Using magnitude")
             multidim_hf_signal.append(magnitude)
 
     return np.array(multidim_hf_signal)
@@ -332,7 +338,12 @@ def preprocess_data(subj_list,
                 index, all_bins = find_max_bin(current_range_ffts[..., -1:], mode=1, min_index=8,
                                                window=int(4 // frame_time), step=int(1 // frame_time))
 
-                hf_signal = phase_extraction(current_range_ffts, index, frame_time, multi_dim, apply_peak_envelopes,use_magnitude)
+                hf_signal = phase_extraction(current_range_ffts,
+                                             index,
+                                             frame_time,
+                                             multi_dim,
+                                             apply_peak_envelopes,
+                                             use_magnitude)
 
                 radar_data_storage.append(hf_signal)
 
@@ -417,7 +428,8 @@ def preprocess(target_dir,
                                              mode=mode,
                                              data_dir=data_dir,
                                              slice_duration=slice_duration,
-                                             apply_peak_envelopes=apply_peak_envelopes)
+                                             apply_peak_envelopes=apply_peak_envelopes,
+                                             use_magnitude=use_magnitude)
 
     radar_val, ecg_val = preprocess_data(subj_list=val_subjects,
                                          rec_list=recordings,
@@ -425,7 +437,8 @@ def preprocess(target_dir,
                                          mode=mode,
                                          data_dir=data_dir,
                                          slice_duration=slice_duration,
-                                         apply_peak_envelopes=apply_peak_envelopes)
+                                         apply_peak_envelopes=apply_peak_envelopes,
+                                         use_magnitude=use_magnitude)
 
     radar_test, ecg_test = preprocess_data(subj_list=test_subjects,
                                            rec_list=recordings,
@@ -433,7 +446,8 @@ def preprocess(target_dir,
                                            mode=mode,
                                            data_dir=data_dir,
                                            slice_duration=30,
-                                           apply_peak_envelopes=apply_peak_envelopes)
+                                           apply_peak_envelopes=apply_peak_envelopes,
+                                           use_magnitude=use_magnitude)
 
     # We always need one-dimensional data for testing
     one_dim_radar_test, _ = preprocess_data(subj_list=test_subjects,
@@ -442,7 +456,8 @@ def preprocess(target_dir,
                                             mode=mode,
                                             data_dir=data_dir,
                                             slice_duration=30,
-                                            apply_peak_envelopes=apply_peak_envelopes)
+                                            apply_peak_envelopes=apply_peak_envelopes,
+                                            use_magnitude=use_magnitude)
 
     # Store data
     store_data_h5(data=radar_train,

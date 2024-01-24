@@ -63,7 +63,8 @@ def run_training_pipeline(cfg,
                    multi_dim=cfg.preprocessing.multi_dim,
                    mode=cfg.preprocessing.mode,
                    data_dir=cfg.dirs.unprocessed_data_dir,
-                   slice_duration=cfg.preprocessing.slice_duration)
+                   slice_duration=cfg.preprocessing.slice_duration,
+                   use_magnitude=cfg.preprocessing.use_magnitude)
 
     run_name = training(cfg, left_out_subject=left_out_subject)
 
