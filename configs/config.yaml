@@ -13,7 +13,7 @@ models:
   TCN:
     run_name: "test_1d_regression"
     input_size: 1 # 1, 130
-    output_size: 1 # 1, 2
+    output_size: 2 # 1, 2
     hidden_size: 200
     num_layers: 11 # 11 (leads to receptive field of 4095 for 30s slices), 8 (leads to receptive field of 511 for 5s slices)
     kernel_size: 3
@@ -48,6 +48,7 @@ preprocessing:
   multi_dim: False # If True, produces 130 input features, if False, produces 1 input feature
   # remember to also change input_size in model config
   mode: "sawtooth" # "sawtooth", "binary classification"
+  # remember to change output_size in model config accordingly
   slice_duration: 30 # adapt the receptive field of TCN to this value using num_layers or no_dilation_layers
   apply_butterworth: True # If True, applies butterworth preprocessing to the data. Otherwise, raw phase data is used.
   apply_peak_envelopes: True # If True, applies peak envelopes preprocessing to the data. Otherwise, raw phase data is used.
@@ -59,8 +60,16 @@ training:
   learning_rate: 1e-3
   dev_mode: False # if True, just trains on 1 batch and does not save anything, only for debugging training
   early_stopping_patience: 5
-  loss_component_weights: {mse: 1.0, peak_detection: 1.0}
-  # available components: mse, cross_entropy, derivative, second_derivative, peak_detection, peak_position
+  loss_component_weights: # if weight is 0, the component is not used in the loss
+    # regression losses
+    mse: 1
+    derivative: 0
+    second_derivative: 0
+    peak_detection: 1
+    # classification losses
+    cross_entropy: 1
+    peak_detection_binary: 1
+
 
 inference:
   model_path: ""
