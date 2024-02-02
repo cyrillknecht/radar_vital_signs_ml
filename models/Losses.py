@@ -1,14 +1,31 @@
 """
 Loss functions for the models.
 """
-
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
+import wandb
+
+
+def log_loss(loss, name):
+    """
+    Log the loss to W&B.
+
+    Args:
+    - loss (Tensor): The loss value to log.
+    - name (str): The name of the loss.
+
+    """
+
+    if wandb.run:
+        # convert tensor to float
+        loss_logged = loss.item()
+        wandb.log({name: loss_logged})
 
 
 def mse_loss(y_true, y_pred):
     """
-    Custom batched loss function for sawtooth signal prediction.
+    Mean Squared Error (MSE) loss component for regression models.
 
     Args:
     - y_true (Tensor): The true values (shape [batch_size, 1, sequence_length]).
@@ -25,6 +42,7 @@ def mse_loss(y_true, y_pred):
 
     # Mean Squared Error (MSE) Component
     l2_loss = nn.MSELoss(reduction='mean')(y_pred, y_true)
+    log_loss(l2_loss, "MSE Loss")
 
     return l2_loss
 
@@ -52,6 +70,7 @@ def derivative_loss(y_true, y_pred):
 
     # Penalize the difference in the derivatives
     grad_loss = nn.L1Loss(reduction='mean')(derivative_pred, derivative_true)
+    log_loss(grad_loss, "Derivative Loss")
 
     return grad_loss
 
@@ -79,11 +98,12 @@ def second_derivative_loss(y_true, y_pred):
 
     # Penalize the difference in the derivatives
     second_derivative_diff = nn.L1Loss(reduction='mean')(second_derivative_pred, second_derivative_true)
+    log_loss(second_derivative_diff, "Second Derivative Loss")
 
     return second_derivative_diff
 
 
-def peak_detection_loss(y_true, y_pred, soft_threshold=0.5):
+def peak_detection_loss(y_true, y_pred, soft_threshold=0.1, filter_width=10):
     """
     Custom batched loss function component with a differentiable approach to peak detection.
 
@@ -101,22 +121,30 @@ def peak_detection_loss(y_true, y_pred, soft_threshold=0.5):
     y_pred = y_pred.squeeze(1)
 
     # Soft Peak Detection Component
-    y_true_diff = y_true[:, 5:] - y_true[:, :-5]
+    y_true_diff = y_true[:, :-filter_width] - y_true[:, filter_width:]
+
     y_true_diff_relu = nn.ReLU()(y_true_diff)
     soft_peaks_true = torch.sigmoid((y_true_diff_relu - soft_threshold) * 1000)
 
-    y_pred_diff = y_pred[:, 5:] - y_pred[:, :-5]
+    y_pred_diff = y_pred[:, :-filter_width] - y_pred[:, filter_width:]
     y_pred_diff_relu = nn.ReLU()(y_pred_diff)
     soft_peaks_pred = torch.sigmoid((y_pred_diff_relu - soft_threshold) * 1000)
 
-    peak_loss = nn.L1Loss()(soft_peaks_pred, soft_peaks_true)
+    soft_peaks_true_sum = soft_peaks_true.sum() / filter_width
+    soft_peaks_pred_sum = soft_peaks_pred.sum() / filter_width
+
+    peak_loss = nn.L1Loss()(soft_peaks_true_sum, soft_peaks_pred_sum)
+    peak_loss = peak_loss / y_true.shape[0]  # scale down the loss by batch size
+    peak_loss = peak_loss / 50  # scale down the loss by maximum number of peaks in a sequence
+
+    log_loss(peak_loss, "Peak Detection Loss")
 
     return peak_loss
 
 
 def cross_entropy_loss(y_true, y_pred, device='cpu', weight=80):
     """
-    Custom batched loss function for classification accuracy.
+    Cross Entropy loss component for binary classification models.
 
     Args:
     - y_true (Tensor): The true labels (shape [batch_size, 2, sequence_length]).
@@ -126,81 +154,49 @@ def cross_entropy_loss(y_true, y_pred, device='cpu', weight=80):
     - Tensor: The computed loss value for the batch.
 
     """
+    loss = nn.CrossEntropyLoss(weight=torch.tensor([1, weight], device=device))(y_pred, y_true)
+    log_loss(loss, "Cross Entropy Loss")
 
     return nn.CrossEntropyLoss(weight=torch.tensor([1, weight], device=device))(y_pred, y_true)
 
 
-def peak_position_count_loss(y_true, y_pred, peak_accuracy_weight=0.5, peak_count_weight=0.5, device='cpu'):
+def peak_detection_binary(y_true, y_pred, soft_threshold=0.1):
     """
-    Custom batched loss function for accurate peak position and count in peak detection.
+    Custom batched loss function component with a differentiable approach to peak detection for binary classification.
+    Scaled to approximately [0, 1].
 
     Args:
-    - y_true (Tensor): The true labels (shape [batch_size, 2, sequence_length]).
-    - y_pred (Tensor): The predicted logits (shape [batch_size, 2, sequence_length]).
-    - peak_accuracy_weight (float): Weighting factor for the peak position accuracy component.
-    - peak_count_weight (float): Weighting factor for the peak count accuracy component.
+        - y_true (Tensor): The true values (shape [batch_size, 1, sequence_length]).
+        - y_pred (Tensor): The predicted values (shape [batch_size, 1, sequence_length]).
 
     Returns:
-    - Tensor: The computed loss value for the batch.
+        - Tensor: The computed loss value for the batch.
 
     """
 
     batch_size = y_true.shape[0]
 
     # Initialize components for peak position and count accuracy
-    position_diff_total = 0.0
     count_diff_total = 0.0
-    confidence_total = 0.0
 
     for i in range(batch_size):
-        peaks_pred = y_pred[i, 0, :] - y_pred[i, 1, :]  # if peak, positive; if not peak, negative
+        peaks_pred = y_pred[i, 1, :] - y_pred[i, 0, :]  # if peak, positive; if not peak, negative
         only_peaks = nn.ReLU()(peaks_pred)
-        pooled_peaks = nn.MaxPool1d(kernel_size=10)(only_peaks.unsqueeze(0))
-        pooled_peaks = pooled_peaks.squeeze(0)
-        soft_peaks = torch.sigmoid((pooled_peaks * 1000))  # scale up the peaks to 1
-        pred_peak_count = soft_peaks.sum()
 
-        num_peaks_true = torch.sum(y_true[i, 0, :])
+        soft_peaks = torch.sigmoid((only_peaks - soft_threshold) * 1000)  # scale up the peaks to 1
+        pred_peak_count = soft_peaks.sum()  # count the number of peaks
+
+        num_peaks_true = torch.sum(y_true[i, 1, :])
         count_diff = nn.L1Loss()(num_peaks_true, pred_peak_count)
 
-        # Confidence measure
-        confidence = 1 / (count_diff + 1)  # Range:[0, 1/2]
-
-        sequence_length = y_true.shape[2]
-
-        # Generate a positional index tensor
-        position_indices = torch.arange(sequence_length, device=device, dtype=torch.float)
-
-        # Weighted sum of positions
-        true_weighted_positions = (y_true * position_indices).sum()
-        position_indices = position_indices.unsqueeze(0)
-        position_indices_pooled = nn.AvgPool1d(kernel_size=10)(position_indices)
-        position_indices_pooled = position_indices_pooled.squeeze(0)
-        pred_weighted_positions = (soft_peaks * position_indices_pooled).sum()
-
-        # Calculate the difference
-        position_diff = nn.L1Loss()(true_weighted_positions, pred_weighted_positions)
-
-        # Aggregate the components across the batch
-        position_diff_total += position_diff
         count_diff_total += count_diff
-        confidence_total += confidence
 
-    # Averaging the components across the batch
-    position_diff_avg = position_diff_total / batch_size
-    count_diff_avg = count_diff_total / batch_size
-    confidence_avg = confidence_total / batch_size
+    count_diff_avg = count_diff_total / batch_size  # average the count difference over the batch
+    count_diff_scaled = count_diff_avg / 50  # scale down the loss by maximum number of peaks in a sequence
 
-    print("Position Difference: ", position_diff_avg)
-    print("Count Difference: ", count_diff_avg)
-    print("Confidence: ", confidence_avg)
+    log_loss(count_diff_scaled, "Peak Detection Binary Loss")
 
-    # Combining all components
-    count_weight = torch.abs(confidence_avg - 1) * peak_count_weight
-    position_weight = confidence_avg * peak_accuracy_weight
-    combined_loss = count_weight * count_diff_avg + position_weight * position_diff_avg
-
-    return combined_loss
+    return count_diff_scaled
 
 
 def get_combined_regression_loss(y_true, y_pred, device='cpu', component_weights=None):
@@ -222,13 +218,13 @@ def get_combined_regression_loss(y_true, y_pred, device='cpu', component_weights
 
     loss = torch.tensor(0.0, device=device)
 
-    if 'mse' in component_weights:
+    if 'mse' in component_weights and component_weights['mse'] > 0.0:
         loss += component_weights['mse'] * mse_loss(y_true, y_pred)
-    if 'derivative' in component_weights:
+    if 'derivative' in component_weights and component_weights['derivative'] > 0.0:
         loss += component_weights['derivative'] * derivative_loss(y_true, y_pred)
-    if 'second_derivative' in component_weights:
+    if 'second_derivative' in component_weights and component_weights['second_derivative'] > 0.0:
         loss += component_weights['second_derivative'] * second_derivative_loss(y_true, y_pred)
-    if 'peak_detection' in component_weights:
+    if 'peak_detection' in component_weights and component_weights['peak_detection'] > 0.0:
         loss += component_weights['peak_detection'] * peak_detection_loss(y_true, y_pred)
 
     return loss
@@ -253,10 +249,10 @@ def get_combined_classification_loss(y_true, y_pred, device='cpu', component_wei
 
     loss = torch.tensor(0.0, device=device)
 
-    if 'cross_entropy' in component_weights:
+    if 'cross_entropy' in component_weights and component_weights['cross_entropy'] > 0.0:
         loss += component_weights['cross_entropy'] * cross_entropy_loss(y_true, y_pred, device=device)
-    if 'peak_position_count' in component_weights:
-        loss += component_weights['peak_position_count'] * peak_position_count_loss(y_true, y_pred, device=device)
+    if 'peak_detection_binary' in component_weights and component_weights['peak_detection_binary'] > 0.0:
+        loss += component_weights['peak_detection_binary'] * peak_detection_binary(y_true, y_pred)
 
     return loss
 
