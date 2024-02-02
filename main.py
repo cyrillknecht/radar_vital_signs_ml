@@ -13,20 +13,13 @@ from pipeline.testing import testing
 from lightning.pytorch import seed_everything
 
 
-def run_training_pipeline(cfg,
-                          train_subjects=None,
-                          val_subjects=None,
-                          test_subjects=None,
-                          left_out_subject=None):
+def run_training_pipeline(cfg, left_out_subject=None):
     """
     Run preprocessing and training.
 
     Args:
         cfg(DictConfig): The config object.
-        train_subjects(list): The subjects to use for training.
-        val_subjects(list): The subjects to use for validation.
-        test_subjects(list): The subjects to use for testing.
-        left_out_subject(int): The subject to leave out of the training set.
+        left_out_subject(int): The subject to leave out for testing.
 
     Returns:
         run_name(str): The name of the run.
@@ -34,25 +27,14 @@ def run_training_pipeline(cfg,
 
     """
 
-    if not train_subjects or not val_subjects or not test_subjects:
-        print("No subjects provided. Using default values.")
+    if left_out_subject is None:
+        left_out_subject = cfg.main.left_out_subject
+    test_subjects = [left_out_subject]
+    val_subjects = cfg.main.val_subjects
+    train_subjects = [x for x in range(1, 25) if x not in val_subjects and x != left_out_subject]
 
-    if train_subjects is None:
-        train_subjects = [x for x in range(25) if x != 0 and x != 1]
-        print("No train subjects provided. Using default values.")
-
-    print("Train subjects: ", train_subjects)
-
-    if val_subjects is None:
-        val_subjects = [0]
-        print("No val subjects provided. Using default values.")
-
-    print("Val subjects: ", val_subjects)
-
-    if test_subjects is None:
-        test_subjects = [1]
-        print("No test subjects provided. Using default values: ")
-
+    print("Training subjects: ", train_subjects)
+    print("Validation subjects: ", val_subjects)
     print("Test subjects: ", test_subjects)
 
     if cfg.main.preprocess_data:
@@ -103,32 +85,21 @@ def run_test_pipeline(cfg, model_path=None):
     return results
 
 
-def full_pipeline(cfg,
-                  train_subjects=None,
-                  val_subjects=None,
-                  test_subjects=None,
-                  left_out_subject=None):
+def full_pipeline(cfg, left_out_subject=None):
     """
     Run the complete pipeline (preprocessing, training, inference, testing).
     Make sure no checkpoint with the same name already exists in the outputs folder.
 
     Args:
         cfg(DictConfig): The config object.
-        train_subjects(list): The subjects to use for training.
-        val_subjects(list): The subjects to use for validation.
-        test_subjects(list): The subjects to use for testing.
-        left_out_subject(int): The subject to leave out of the training set.
+        left_out_subject(int): The subject to leave out for testing.
+        If None, use the subject specified in the config file.
 
     Returns:
         results(dict): The results of the test run.
 
     """
-    run_name = run_training_pipeline(cfg=cfg,
-                                     train_subjects=train_subjects,
-                                     val_subjects=val_subjects,
-                                     test_subjects=test_subjects,
-                                     left_out_subject=left_out_subject
-                                     )
+    run_name = run_training_pipeline(cfg=cfg, left_out_subject=left_out_subject)
     results = run_test_pipeline(cfg, run_name)
 
     return results
@@ -148,15 +119,8 @@ def leave_one_out_training(cfg):
 
     results = []
     for i in range(1, 24):
-        train_subjects = [x for x in range(1, 25) if x != i]
-        val_subjects = [0]
-        test_subjects = [i]
         print("Now running leave-one-out for subject: ", i)
-        result = full_pipeline(cfg,
-                               train_subjects=train_subjects,
-                               val_subjects=val_subjects,
-                               test_subjects=test_subjects,
-                               left_out_subject=i)
+        result = full_pipeline(cfg, left_out_subject=i)
         results.append(result)
 
     # Average the result list of dicts into one dict

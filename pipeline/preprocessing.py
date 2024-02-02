@@ -523,15 +523,19 @@ def preprocessing_hydra(cfg: DictConfig):
 
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
 
-    LEFT_OUT_SUBJECT = 1
-    TRAIN_SUBJECTS = [i for i in range(1, 25) if i != LEFT_OUT_SUBJECT]
-    VAL_SUBJECTS = [0]
-    TEST_SUBJECTS = [LEFT_OUT_SUBJECT]
+    left_out_subject = cfg.main.left_out_subject
+    test_subjects = [left_out_subject]
+    val_subjects = cfg.main.val_subjects
+    train_subjects = [x for x in range(1, 25) if x not in val_subjects and x != left_out_subject]
+
+    print("Training subjects: ", train_subjects)
+    print("Validation subjects: ", val_subjects)
+    print("Test subjects: ", test_subjects)
 
     preprocess(target_dir="../" + cfg.dirs.data_dir,
-               train_subjects=TRAIN_SUBJECTS,
-               val_subjects=VAL_SUBJECTS,
-               test_subjects=TEST_SUBJECTS,
+               train_subjects=train_subjects,
+               val_subjects=val_subjects,
+               test_subjects=test_subjects,
                multi_dim=cfg.preprocessing.multi_dim,
                mode=cfg.preprocessing.mode,
                data_dir="../" + cfg.dirs.unprocessed_data_dir,

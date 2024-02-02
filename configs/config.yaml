@@ -87,6 +87,8 @@ main:
     # the one specified in the config
     # leave_one_out: runs full mode for each patient, leaving out one patient each time as a test set
     preprocess_data: False # if True, preprocesses the data, otherwise loads existing preprocessed data
+    left_out_subject: 1 # if mode is full, specifies the patient to leave out
+    val_subjects: [0] # specifies the patient to use as validation set (for leave_one_out, full, and train mode)
 
 
 
