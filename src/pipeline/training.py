@@ -14,8 +14,8 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from omegaconf import DictConfig, OmegaConf
 import time
 
-from models.LightningModel import get_model, LitModel
-from pipeline.dataloader import get_data_loaders
+from src.models.LightningModel import get_model, LitModel
+from src.pipeline.dataloader import get_data_loaders
 
 
 def get_plot(result, target, frame_time):
@@ -152,7 +152,7 @@ def training(cfg: DictConfig, left_out_subject: int = None):
     return name  # Return the name of the run to reload the model for inference
 
 
-@hydra.main(version_base="1.2", config_path="../configs", config_name="config")
+@hydra.main(version_base="1.2", config_path="../../configs", config_name="config")
 def training_hydra(cfg: DictConfig):
     """
     Hydra wrapper for training.
@@ -163,6 +163,10 @@ def training_hydra(cfg: DictConfig):
     """
 
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
+
+    # Change the data_dir and save_dir to be relative to the working directory
+    cfg.dirs.data_dir = "../../" + cfg.dirs.data_dir
+    cfg.dirs.save_dir = "../../" + cfg.dirs.save_dir
 
     training(cfg, left_out_subject=None)
 

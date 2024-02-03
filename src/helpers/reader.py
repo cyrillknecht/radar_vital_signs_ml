@@ -2,9 +2,9 @@ import datetime
 import os.path
 
 import numpy as np
-from helpers.envelopes import peak_envelopes
-from helpers.fmcw_utils import range_fft, HR_calc_ecg, extract_phase_multibin, find_max_bin, butt_filt
-from helpers.plotting_helpers import plot_ecg_lines
+from src.helpers.envelopes import peak_envelopes
+from src.helpers.fmcw_utils import range_fft, HR_calc_ecg, extract_phase_multibin, find_max_bin, butt_filt
+from src.helpers.plotting_helpers import plot_ecg_lines
 
 import matplotlib.pyplot as plt
 
@@ -69,10 +69,10 @@ if __name__ == "__main__":
     recording = "2"
     ecg_samplingrate = 130
 
-    ecg, start_time_ecg, = read_ecg(os.path.join("../dataset", str(subject), f"recording_{recording}_ecg.txt"))
-    acc, start_time_acc = read_acc(os.path.join("../dataset", str(subject), f"recording_{recording}_acc.txt"))
+    ecg, start_time_ecg, = read_ecg(os.path.join("../../dataset", str(subject), f"recording_{recording}_ecg.txt"))
+    acc, start_time_acc = read_acc(os.path.join("../../dataset", str(subject), f"recording_{recording}_acc.txt"))
 
-    radar_60, info_60, = read_radar_data_npz(os.path.join("../dataset", str(subject), f"recording_{recording}_60GHz.npz"))
+    radar_60, info_60, = read_radar_data_npz(os.path.join("../../dataset", str(subject), f"recording_{recording}_60GHz.npz"))
     # radar_24, info_24,=read_radar_data_npz(os.path.join("dataset",str(subject),f"recording_{recording}_24GHz.npz"))
     # radar_120, info_120,=read_radar_data_npz(os.path.join("dataset",str(subject),f"recording_{recording}_120GHz.npz"))
 

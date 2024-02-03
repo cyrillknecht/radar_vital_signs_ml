@@ -4,15 +4,13 @@ Saves the results in csv files.
 """
 
 import lightning as pl
-from models.LightningModel import LitModel, get_model
+from src.models.LightningModel import LitModel, get_model
 import torch
 import numpy as np
 import os
-import pandas as pd
 from omegaconf import DictConfig
 import hydra
-from pipeline.dataloader import get_data_loaders
-import csv
+from src.pipeline.dataloader import get_data_loaders
 import h5py
 
 
@@ -103,7 +101,7 @@ def inference(cfg):
     return result_signal_list
 
 
-@hydra.main(version_base="1.2", config_path="../configs", config_name="config")
+@hydra.main(version_base="1.2", config_path="../../configs", config_name="config")
 def inference_hydra(cfg: DictConfig):
     """
     Hydra wrapper for running the inference function as a script.
@@ -113,6 +111,12 @@ def inference_hydra(cfg: DictConfig):
     """
 
     hydra.output_subdir = None  # Prevent hydra from creating a new folder for each run
+
+    # Change the data_dir and save_dir to be relative to the working directory
+    cfg.dirs.data_dir = "../../" + cfg.dirs.data_dir
+    cfg.dirs.save_dir = "../../" + cfg.dirs.save_dir
+    cfg.inference.model_path = "../../" + cfg.inference.model_path
+
     inference(cfg)
 
 

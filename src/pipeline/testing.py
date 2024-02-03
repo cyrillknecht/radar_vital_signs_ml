@@ -17,7 +17,7 @@ import os
 
 from omegaconf import DictConfig
 from scipy.signal import find_peaks
-from helpers.fmcw_utils import HR_calc_ecg
+from src.helpers.fmcw_utils import HR_calc_ecg
 
 
 def smooth_signal(signal, window_size):
@@ -42,7 +42,6 @@ def peak_detection(signal, prominence=0.7):
     Args:
         signal(np.array): ECG or radar signal (classification or regression
         prominence(float): prominence parameter for peak detection
-        plot(bool): whether to plot the signals
 
     Returns:
         peaks(np.array): array of peak indices of the given signal
@@ -374,7 +373,7 @@ def testing(data_dir, plot, prominence, wandb_log=False):
     return metrics
 
 
-@hydra.main(version_base="1.2", config_path="../configs", config_name="config")
+@hydra.main(version_base="1.2", config_path="../../configs", config_name="config")
 def testing_hydra(cfg: DictConfig):
     """
     Hydra wrapper for testing.
@@ -387,6 +386,9 @@ def testing_hydra(cfg: DictConfig):
     if cfg.testing.wandb_log:
         wandb.login(key=cfg.wandb.api_key)
         wandb.init(project=cfg.wandb.project_name, name="Test Run", dir=cfg.dirs.save_dir)
+
+    # Change the data_dir to be relative to the working directory
+    cfg.dirs.data_dir = "../../" + cfg.dirs.data_dir
 
     testing(cfg.dirs.data_dir, cfg.testing.plot, cfg.testing.prominence, cfg.testing.wandb_log)
 

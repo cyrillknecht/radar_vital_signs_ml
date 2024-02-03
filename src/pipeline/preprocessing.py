@@ -19,8 +19,8 @@ import scipy.signal
 import warnings
 from omegaconf import DictConfig
 
-from helpers.envelopes import peak_envelopes
-from helpers.fmcw_utils import range_fft, HR_calc_ecg, extract_phase_multibin, find_max_bin, butt_filt
+from src.helpers.envelopes import peak_envelopes
+from src.helpers.fmcw_utils import range_fft, HR_calc_ecg, extract_phase_multibin, find_max_bin, butt_filt
 
 
 def process_phase_signal(signal, frame_time, apply_peak_envelopes=True, apply_butterworth=True):
@@ -512,7 +512,7 @@ def preprocess(target_dir,
     return radar_train, ecg_train, radar_val, ecg_val, radar_test, ecg_test, one_dim_radar_test
 
 
-@hydra.main(version_base="1.2", config_path="../configs", config_name="config")
+@hydra.main(version_base="1.2", config_path="../../configs", config_name="config")
 def preprocessing_hydra(cfg: DictConfig):
     """
     Hydra wrapper for preprocessing.
@@ -532,13 +532,13 @@ def preprocessing_hydra(cfg: DictConfig):
     print("Validation subjects: ", val_subjects)
     print("Test subjects: ", test_subjects)
 
-    preprocess(target_dir="../" + cfg.dirs.data_dir,
+    preprocess(target_dir="../../" + cfg.dirs.data_dir,
                train_subjects=train_subjects,
                val_subjects=val_subjects,
                test_subjects=test_subjects,
                multi_dim=cfg.preprocessing.multi_dim,
                mode=cfg.preprocessing.mode,
-               data_dir="../" + cfg.dirs.unprocessed_data_dir,
+               data_dir="../../" + cfg.dirs.unprocessed_data_dir,
                slice_duration=cfg.preprocessing.slice_duration,
                apply_peak_envelopes=cfg.preprocessing.apply_peak_envelopes,
                use_magnitude=cfg.preprocessing.use_magnitude,

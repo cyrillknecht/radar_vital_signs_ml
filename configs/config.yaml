@@ -13,7 +13,7 @@ models:
   TCN:
     run_name: "test_1d_regression"
     input_size: 1 # 1, 130
-    output_size: 2 # 1, 2
+    output_size: 1 # 1, 2
     hidden_size: 200
     num_layers: 11 # 11 (leads to receptive field of 4095 for 30s slices), 8 (leads to receptive field of 511 for 5s slices)
     kernel_size: 3
@@ -72,7 +72,7 @@ training:
 
 
 inference:
-  model_path: ""
+  model_path: "outputs/TCN_test_1d_regression.ckpt"
 
 testing:
   plot: True # plots the predictions locally if wandb_log is False, otherwise plots on wandb
@@ -86,7 +86,7 @@ main:
     # full: runs train and test combined.make sure no model_path is set and that there exists no model with the same name as
     # the one specified in the config
     # leave_one_out: runs full mode for each patient, leaving out one patient each time as a test set
-    preprocess_data: False # if True, preprocesses the data, otherwise loads existing preprocessed data
+    preprocess_data: True # if True, preprocesses the data, otherwise loads existing preprocessed data
     left_out_subject: 1 # if mode is full, specifies the patient to leave out
     val_subjects: [0] # specifies the patient to use as validation set (for leave_one_out, full, and train mode)
 

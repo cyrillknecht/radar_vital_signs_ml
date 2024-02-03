@@ -6,10 +6,10 @@ import wandb
 import hydra
 
 from omegaconf import DictConfig
-from pipeline.preprocessing import preprocess
-from pipeline.training import training
-from pipeline.inference import inference
-from pipeline.testing import testing
+from src.pipeline.preprocessing import preprocess
+from src.pipeline.training import training
+from src.pipeline.inference import inference
+from src.pipeline.testing import testing
 from lightning.pytorch import seed_everything
 
 

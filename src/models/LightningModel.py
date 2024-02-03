@@ -3,14 +3,13 @@ Implementation of  a wrapper class for the models to use with PyTorch Lightning.
 """
 
 import torch
-import torch.nn as nn
 import lightning as pl
 
-from models.TCN import TCN
-from models.LSTM import LSTM
-from models.GRU import GRU
-from models.RNN import RNN
-from models.Losses import get_loss
+from src.models.TCN import TCN
+from src.models.LSTM import LSTM
+from src.models.GRU import GRU
+from src.models.RNN import RNN
+from src.models.Losses import get_loss
 
 
 class LitModel(pl.LightningModule):

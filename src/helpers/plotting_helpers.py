@@ -1,8 +1,7 @@
-from helpers.DBF import DBF
-from helpers.fmcw_utils import c, DISTANCE_ANTENNAS, range_fft
+from src.helpers.DBF import DBF
+from src.helpers.fmcw_utils import c, DISTANCE_ANTENNAS, range_fft
 import numpy as np
 import matplotlib
-import matplotlib.pyplot as plt
 
 
 def plot_ecg_lines(peaks, ax, color="k", colors=None):

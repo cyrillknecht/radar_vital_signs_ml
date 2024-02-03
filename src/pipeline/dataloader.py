@@ -123,7 +123,7 @@ def test_data_loaders():
 
     """
 
-    train_ldr, val_ldr, test_ldr = get_data_loaders(data_dir="../dataset_processed")
+    train_ldr, val_ldr, test_ldr = get_data_loaders(data_dir="../../dataset_processed")
     print("Number of batches in training set:", len(train_ldr))
     print("Number of batches in validation set:", len(val_ldr))
     print("Number of batches in test set:", len(test_ldr))
