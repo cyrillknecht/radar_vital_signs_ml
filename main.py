@@ -117,6 +117,8 @@ def leave_one_out_training(cfg):
 
     """
 
+    cfg.main.preprocess_data = True  # Always preprocess data for leave-one-out
+
     results = []
     for i in range(1, 24):
         print("Now running leave-one-out for subject: ", i)
