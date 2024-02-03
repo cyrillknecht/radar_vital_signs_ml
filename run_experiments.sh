@@ -1,7 +1,7 @@
 #!/bin/bash
 # Quick experiments to reproduce some results:
-#python main.py main.mode="full" main. model="TCN" models.TCN.run_name="1d_regression" preprocessing.multi_dim=False preprocessing.mode="sawtooth" models.TCN.input_size=1 models.TCN.output_size=1
-#python main.py main.mode="full" models.TCN.run_name="1d_classification" preprocessing.multi_dim=False preprocessing.mode="binary classification" models.TCN.input_size=1 models.TCN.output_size=2
+python main.py main.mode="full" model="TCN" models.TCN.run_name="1d_regression" preprocessing.multi_dim=False preprocessing.mode="sawtooth" models.TCN.input_size=1 models.TCN.output_size=1
+#python main.py main.mode="full" model="TCN" models.TCN.run_name="1d_classification" preprocessing.multi_dim=False preprocessing.mode="binary classification" models.TCN.input_size=1 models.TCN.output_size=2
 #python main.py main.mode="full" model="TCN" models.TCN.run_name="65d_classification" preprocessing.multi_dim=True preprocessing.use_magnitude=False preprocessing.mode="binary classification" models.TCN.input_size=65 models.TCN.output_size=2
 #python main.py main.mode="full" model="TCN" models.TCN.run_name="65d_regression" preprocessing.multi_dim=True preprocessing.use_magnitude=False preprocessing.mode="sawtooth" models.TCN.input_size=65 models.TCN.output_size=1
 #python main.py  main.mode="full"  model="TCN" models.TCN.run_name="130d_regression" preprocessing.multi_dim=True preprocessing.mode="sawtooth" models.TCN.input_size=130 models.TCN.output_size=1
