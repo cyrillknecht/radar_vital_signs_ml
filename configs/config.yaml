@@ -55,7 +55,7 @@ preprocessing:
   use_magnitude: True # Only applies to multi_dim mode. Change input_size in model config to 65 if True, 130 if False
 
 training:
-  max_epochs: 1
+  max_epochs: 100
   batch_size: 8
   learning_rate: 1e-3
   dev_mode: False # if True, just trains on 1 batch and does not save anything, only for debugging training
@@ -72,7 +72,7 @@ training:
 
 
 inference:
-  model_path: "outputs/TCN_test_1d_regression.ckpt"
+  model_path: ""
 
 testing:
   plot: True # plots the predictions locally if wandb_log is False, otherwise plots on wandb

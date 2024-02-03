@@ -24,7 +24,7 @@ def get_plot(result, target, frame_time):
 
     Args:
         result(torch.Tensor): The result of the prediction.
-        target(torch.Tensor): The target of the prediction.
+        target (torch.Tensor): The target of the prediction.
         frame_time(float): The time between two frames in seconds.
 
     Returns:
