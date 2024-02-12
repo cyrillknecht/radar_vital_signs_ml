@@ -1,9 +1,9 @@
 wandb:
-  project_name: "radar-ecg-experiments"
-  api_key: "48fd3e4aefe699d5db6a9025aa409e684338a4f5"
+  project_name: "YOUR_WANDB_PROJECT_NAME"
+  api_key: "YOUR_WANDB_API_KEY"
 
 dirs:
-  data_dir: "dataset_processed"
+  data_dir: "YOUR_DATASET_DIR_PATH"
   unprocessed_data_dir: "dataset"
   save_dir: "outputs"
 
@@ -13,7 +13,7 @@ models:
   TCN:
     run_name: "test_1d_regression"
     input_size: 1 # 1, 130
-    output_size: 1 # 1, 2
+    output_size: 2 # 1, 2
     hidden_size: 200
     num_layers: 11 # 11 (leads to receptive field of 4095 for 30s slices), 8 (leads to receptive field of 511 for 5s slices)
     kernel_size: 3
@@ -27,14 +27,17 @@ models:
     hidden_size: 10
     num_layers: 2
     kernel_size: 0
+    no_dilation_layers: 0
+
 
   GRU:
     run_name: "_test_1d_regression"
-    input_size: 130
-    output_size: 2
+    input_size: 1
+    output_size: 1
     hidden_size: 200
     num_layers: 2
     kernel_size: 0
+    no_dilation_layers: 0
 
   RNN:
     run_name: "_test_1d_regression"
@@ -43,11 +46,13 @@ models:
     hidden_size: 10
     num_layers: 2
     kernel_size: 0
+    no_dilation_layers: 0
+
 
 preprocessing:
   multi_dim: False # If True, produces 130 input features, if False, produces 1 input feature
   # remember to also change input_size in model config
-  mode: "sawtooth" # "sawtooth", "binary classification"
+  mode: "binary classification" # "sawtooth", "binary classification"
   # remember to change output_size in model config accordingly
   slice_duration: 30 # adapt the receptive field of TCN to this value using num_layers or no_dilation_layers
   apply_butterworth: True # If True, applies butterworth preprocessing to the data. Otherwise, raw phase data is used.
@@ -55,7 +60,7 @@ preprocessing:
   use_magnitude: True # Only applies to multi_dim mode. Change input_size in model config to 65 if True, 130 if False
 
 training:
-  max_epochs: 100
+  max_epochs: 400
   batch_size: 8
   learning_rate: 1e-3
   dev_mode: False # if True, just trains on 1 batch and does not save anything, only for debugging training
@@ -72,15 +77,15 @@ training:
 
 
 inference:
-  model_path: ""
+  model_path: "outputs/TCN_1d_classification_normal_loss_left_out_1.ckpt"
 
 testing:
-  plot: True # plots the predictions locally if wandb_log is False, otherwise plots on wandb
+  plot: False # plots the predictions locally if wandb_log is False, otherwise plots on wandb
   prominence: 0.2
-  wandb_log: True
+  wandb_log: False
 
 main:
-    mode: "full" # "train", "test", "full", "leave_one_out"
+    mode: "test" # "train", "test", "full", "leave_one_out"
     # train: Runs preprocessing and training
     # test: Runs inference and testing, requires model_path to be set
     # full: runs train and test combined.make sure no model_path is set and that there exists no model with the same name as
