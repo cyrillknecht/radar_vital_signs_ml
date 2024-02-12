@@ -85,7 +85,7 @@ testing:
   wandb_log: False
 
 main:
-    mode: "test" # "train", "test", "full", "leave_one_out"
+    mode: "full" # "train", "test", "full", "leave_one_out"
     # train: Runs preprocessing and training
     # test: Runs inference and testing, requires model_path to be set
     # full: runs train and test combined.make sure no model_path is set and that there exists no model with the same name as
