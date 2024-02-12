@@ -1,7 +1,10 @@
 # Generative Machine Learning for Radar-Based Vital Sign Monitoring
-
+![Implementation Overview](figures/implementation_overview.png)
 This repository contains the code for the Semester Thesis "Generative Machine Learning for Radar-Based Vital Sign Monitoring" by Cyrill Knecht.
 The Thesis was conducted at the Project Based Learning Lab at ETH Zurich.
+Raw results for the experiments conducted in this thesis can be found in the following two wandB projects:
+- [Main TCN and GRU experiments](https://wandb.ai/cyrknech/radar-ecg-final-results/)
+- [Additional Experiments](https://wandb.ai/cyrknech/radar-ecg-experiments/)
 
 ## Project Description
 Vital sign monitoring is fundamental in current medicine and contact-less monitoring
@@ -20,7 +23,7 @@ by removing artifacts and reconstructing the pulses starting from the radar data
 # Running the Code
 
 ## Prerequisites
-- Python 3.7
+- Python 3.8
 - pip
 
 ## Installation
