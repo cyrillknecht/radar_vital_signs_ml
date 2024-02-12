@@ -292,3 +292,4 @@ cython_debug/
 
 
 /.idea/
+/plots/
